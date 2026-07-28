@@ -107,11 +107,51 @@ def add_categories_selection(config: od.Config) -> None:
         label=r"1t",
     )
 
+    # number of jets
+    config.add_category(
+        name="0j",
+        id=10000,
+        selection="sel_0j",
+        label=r"0j",
+    )
+    config.add_category(
+        name="1j",
+        id=20000,
+        selection="sel_1j",
+        label=r"1j",
+    )
+    config.add_category(
+        name="2j",
+        id=30000,
+        selection="sel_2j",
+        label=r"2j",
+    )
+    config.add_category(
+        name="3j",
+        id=40000,
+        selection="sel_3j",
+        label=r">=3j",
+    )
+    # config.add_category(
+    #     name="1b",
+    #     id=50000,
+    #     selection="sel_1b",
+    #     label=r"1b",
+    # )
+    # config.add_category(
+    #     name="2b",
+    #     id=60000,
+    #     selection="sel_2b",
+    #     label=r"2b",
+    # )
+
     # -- combined categories
 
     category_groups = {
         "lepton": CategoryGroup(["1e", "1m"], is_complete=True, has_overlap=False),
         "n_top_tags": CategoryGroup(["0t", "1t"], is_complete=False, has_overlap=False),
+        "n_jets": CategoryGroup(["0j", "1j", "2j", "3j"], is_complete=True, has_overlap=False),
+        #"n_jets": CategoryGroup(["0j", "1j", "2j", "3j", "1b", "2b"], is_complete=True, has_overlap=False),
     }
 
     create_category_combinations(config, category_groups, name_fn, kwargs_fn=kwargs_fn, parent_mode="safe")
@@ -281,6 +321,8 @@ def add_categories_ml(config: od.Config, ml_model_inst: MLModel) -> None:
         "lepton": CategoryGroup(["1e", "1m"], is_complete=True, has_overlap=False),
         "n_top_tags": CategoryGroup(["0t", "1t"], is_complete=False, has_overlap=False),
         "chi2": CategoryGroup(["chi2pass", "chi2fail"], is_complete=True, has_overlap=False),
+        "n_jets": CategoryGroup(["0j", "1j", "2j", "3j"], is_complete=True, has_overlap=False),
+        #"n_jets": CategoryGroup(["0j", "1j", "2j", "3j", "1b", "2b"], is_complete=True, has_overlap=False),
         "cos_theta_star": CategoryGroup(
             ["acts_0_5", "acts_5_7", "acts_7_9", "acts_9_1"],
             is_complete=True,

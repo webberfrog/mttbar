@@ -150,6 +150,11 @@ def add_config(
         # "w_lnu_mlnu0to120_ht800to1500_madgraph",
         # "w_lnu_mlnu0to120_ht1500to2500_madgraph",
         # "w_lnu_mlnu0to120_ht2500toinf_madgraph",
+        # Alex add w_lnu datasets from mtt.config.datasets.py list
+        "w_lnu_1j_madgraph",
+        "w_lnu_2j_madgraph",
+        "w_lnu_3j_madgraph",
+        "w_lnu_4j_madgraph",
         # Diboson
         "ww_pythia",
         "wz_pythia",

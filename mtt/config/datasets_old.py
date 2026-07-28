@@ -273,101 +273,19 @@ def vv_datasets(
     print_log_msg(f"Added {len(dataset_list)} diboson datasets.", log)
 
 
-def tt_sl_datasets(
+def tt_datasets(
         config: od.Config,
         limit_dataset_files: int | None = None,
         log: bool = False,
 ) -> None:
     """
-    Adds ttbar_sl datasets to the config based on the run number and campaign tag.
+    Adds ttbar datasets to the config based on the run number and campaign tag.
     """
     run = config.campaign.x.run
     tag = config.x.cpn_tag
     tt_names = [
         "tt_sl_powheg",
-    ]
-    datasets = {
-        2: {
-            "2017": tt_names,
-        },
-        3: {
-            "2022preEE": tt_names,
-            "2022postEE": tt_names,
-            "2023preBPix": tt_names,
-            "2023postBPix": tt_names,
-            "2024": tt_names,
-        },
-    }
-    try:
-        dataset_list = datasets[run][tag]
-    except KeyError:
-        raise ValueError(f"TTbar - Unsupported run/tag combination: run={run}, tag={tag}")
-
-    for dataset in dataset_list:
-        ds = config.add_dataset(config.campaign.get_dataset(dataset))
-        ds.add_tag({"has_top", "has_ttbar", "is_sm_ttbar"})
-        if ds.name.startswith("tt_sl"):
-            ds.add_tag("has_memory_intensive_reco")
-
-        if limit_dataset_files:
-            for info in ds.info.values():
-                info.n_files = min(info.n_files, limit_dataset_files)
-
-    print_log_msg(f"Added {len(dataset_list)} ttbar datasets.", log)
-
-def tt_dl_datasets(
-        config: od.Config,
-        limit_dataset_files: int | None = None,
-        log: bool = False,
-) -> None:
-    """
-    Adds ttbar_sl datasets to the config based on the run number and campaign tag.
-    """
-    run = config.campaign.x.run
-    tag = config.x.cpn_tag
-    tt_names = [
         "tt_dl_powheg",
-    ]
-    datasets = {
-        2: {
-            "2017": tt_names,
-        },
-        3: {
-            "2022preEE": tt_names,
-            "2022postEE": tt_names,
-            "2023preBPix": tt_names,
-            "2023postBPix": tt_names,
-            "2024": tt_names,
-        },
-    }
-    try:
-        dataset_list = datasets[run][tag]
-    except KeyError:
-        raise ValueError(f"TTbar - Unsupported run/tag combination: run={run}, tag={tag}")
-
-    for dataset in dataset_list:
-        ds = config.add_dataset(config.campaign.get_dataset(dataset))
-        ds.add_tag({"has_top", "has_ttbar", "is_sm_ttbar"})
-        if ds.name.startswith("tt_sl"):
-            ds.add_tag("has_memory_intensive_reco")
-
-        if limit_dataset_files:
-            for info in ds.info.values():
-                info.n_files = min(info.n_files, limit_dataset_files)
-
-    print_log_msg(f"Added {len(dataset_list)} ttbar datasets.", log)
-
-def tt_fh_datasets(
-        config: od.Config,
-        limit_dataset_files: int | None = None,
-        log: bool = False,
-) -> None:
-    """
-    Adds ttbar_sl datasets to the config based on the run number and campaign tag.
-    """
-    run = config.campaign.x.run
-    tag = config.x.cpn_tag
-    tt_names = [
         "tt_fh_powheg",
     ]
     datasets = {

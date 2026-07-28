@@ -28,9 +28,7 @@ from mtt.config.datasets import (
     dy_datasets,
     w_lnu_datasets,
     qcd_datasets,
-    tt_sl_datasets,
-    tt_dl_datasets,
-    tt_fh_datasets,
+    tt_datasets,
     st_datasets,
     vv_datasets,
     # Run 3 signal samples
@@ -114,14 +112,8 @@ def add_new_config(
     cfg.add_process(procs.n.data)
     data_datasets(cfg, limit_dataset_files, log=False)
 
-    cfg.add_process(procs.n.tt_sl)
-    tt_sl_datasets(cfg, limit_dataset_files, log=False)
-
-    cfg.add_process(procs.n.tt_dl)
-    tt_dl_datasets(cfg, limit_dataset_files, log=False)
-
-    cfg.add_process(procs.n.tt_fh)
-    tt_fh_datasets(cfg, limit_dataset_files, log=False)
+    cfg.add_process(procs.n.tt)
+    tt_datasets(cfg, limit_dataset_files, log=False)
 
     cfg.add_process(procs.n.st)
     st_datasets(cfg, limit_dataset_files, log=False)
@@ -193,16 +185,14 @@ def add_new_config(
     # set color of main processes
     colors = {
         "data": "#000000",  # black
-        "tt_sl": "#E04F21",  # red
-        "tt_dl": "#984ea3",  # purple
-        "tt_fh": "#CCCCCC",  # light gray
+        "tt": "#E04F21",  # red
         "qcd": "#5E8FFC",  # blue
         "w_lnu": "#82FF28",  # green
         "w_lnu_1j": "#006400",  # dark green
         "w_lnu_2j": "#98FB98",  # light green
         "w_lnu_3j": "#00FF7F",  # spring green
         "w_lnu_4j": "#7CFC00",  # lawn green
-        "higgs": "##FFB6C1",  # light pink
+        "higgs": "#984ea3",  # purple
         "st": "#3E00FB",  # dark purple
         "dy": "#FBFF36",  # yellow
         "vv": "#B900FC",  # pink

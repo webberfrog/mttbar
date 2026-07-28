@@ -11,17 +11,16 @@ from columnflow.util import maybe_import
 from mtt.production.features import features
 from mtt.production.weights import weights
 from mtt.production.ttbar_reco import ttbar
-from mtt.production.ttbar_reco_uic import uic
 
 ak = maybe_import("awkward")
 
 
 @producer(
     uses={
-        features, category_ids, weights, ttbar, uic,
+        features, category_ids, weights, ttbar,
     },
     produces={
-        features, category_ids, weights, ttbar, uic,
+        features, category_ids, weights, ttbar,
     },
 )
 def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
@@ -37,8 +36,5 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # category ids
     events = self[category_ids](events, **kwargs)
-
-    # uic entanglement and asymmetry
-    events = self[uic](events, **kwargs)
 
     return events

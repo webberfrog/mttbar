@@ -23,7 +23,7 @@ from columnflow.config_util import (
 from mtt.config.categories import add_categories_selection
 from mtt.config.variables import add_variables
 
-from mtt.config.datasets import (
+from mtt.config.datasets_uic import (
     data_datasets,
     dy_datasets,
     w_lnu_datasets,
@@ -953,9 +953,11 @@ def add_new_config(
             # muons
             "{Muon,VetoMuon}.{pt,eta,phi,mass}",
             "Muon.pfRelIso04_all",
+            "Muon.charge",
             # electrons
             "{Electron,VetoElectron}.{pt,eta,phi,mass}",
             "Electron.{deltaEtaSC,pfRelIso03_all}",
+            "Electron.charge",
 
             # photons (for L1 prefiring)
             "Photon.{pt,eta,phi,mass,jetIdx}",

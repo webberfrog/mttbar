@@ -410,26 +410,6 @@ def add_variables(config: od.Config) -> None:
         y_title="Events",
     )
 
-    #uic variables
-
-    config.add_variable(
-        name="delta_y",
-        expression="TTbar.delta_y",
-        binning=(100,-5.0, 5.0),
-        unit="GeV",
-        x_title=rf"$\Delta y$",
-        y_title="Events",
-    )
-
-    config.add_variable(
-        name="tanh_y",
-        expression="TTbar.tanh_y",
-        binning=(30,-1.0, 1.0),
-        unit="GeV",
-        x_title=rf"tanh($\Delta y$)",
-        y_title="Events",
-    )
-
     # cutflow variables
 
     # Jet properties

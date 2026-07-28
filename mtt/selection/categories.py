@@ -48,3 +48,50 @@ def sel_1t(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
     """Select only events with exactly one top-tagged fat jet."""
     mask = (Route("cutflow.n_toptag_delta_r_lepton").apply(events) == 1)
     return events, mask
+
+@categorizer(uses={"cutflow.n_jet"})
+def sel_0j(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+    """Select only events with zero jets."""
+    mask = (Route("cutflow.n_jet").apply(events) == 0)
+    return events, mask
+
+
+@categorizer(uses={"cutflow.n_jet"})
+def sel_1j(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+    """Select only events with exactly one jet."""
+    mask = (Route("cutflow.n_jet").apply(events) == 1)
+    return events, mask
+
+
+@categorizer(uses={"cutflow.n_jet"})
+def sel_2j(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+    """Select only events with exactly two jets."""
+    mask = (Route("cutflow.n_jet").apply(events) == 2)
+    return events, mask
+
+
+@categorizer(uses={"cutflow.n_jet"})
+def sel_3j(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+    """Select only events with three or more jets."""
+    mask = (Route("cutflow.n_jet").apply(events) >= 3)
+    return events, mask
+
+
+@categorizer(uses={"Jet.pt"})
+def sel_3j_alt(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+    """Select only events with three or more jets."""
+    mask = ak.num(events.Jet.pt, axis=1) >= 3
+    return events, mask
+
+
+# @categorizer(uses={"BJet.pt"})
+# def sel_1b(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+#     """Select only events with 1 or more b_jets."""
+#     mask = ak.num(events.BJet.pt, axis=1) == 1
+#     return events, mask
+
+# @categorizer(uses={"BJet.pt"})
+# def sel_2b(self: Categorizer, events: ak.Array, **kwargs) -> ak.Array:
+#     """Select only events with 2 or more b_jets."""
+#     mask = ak.num(events.BJet.pt, axis=1) == 2
+#     return events, mask
