@@ -430,6 +430,22 @@ def add_variables(config: od.Config) -> None:
         y_title="Events",
     )
 
+    top_kind_labels = {"top": "t", "antitop": r"\overline{t}"}
+    for kind, kind_label in top_kind_labels.items():
+        for var, var_label, var_unit, var_binning in [
+            ("mass", "M", "GeV", (100, 0, 700)),
+            ("pt", "p_{T}", "GeV", (50, 0, 800)),
+            ("eta", r"\eta", None, (50, -2.5, 2.5)),
+            ("phi", r"\phi", None, (50, -np.pi, np.pi)),
+        ]:
+            config.add_variable(
+                name=f"{kind}_{var}",
+                expression=f"TTbar.{kind}_{var}",
+                binning=var_binning,
+                unit=var_unit,
+                x_title=rf"${var_label}({{{kind_label}}})$",
+            )
+
     # cutflow variables
 
     # Jet properties

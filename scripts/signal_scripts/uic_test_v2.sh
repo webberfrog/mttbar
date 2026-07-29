@@ -1,27 +1,28 @@
 #!/usr/bin/env bash
 
 #
-# plot the distribution of the ttbar mass
+# Test 
 # only mu data implemented currently
 #
 
 # common arguments for all tasks
 args=(
     --version uic_v1
-    --categories incl,1m__0t__2j,1m__1t__2j,1m__0t__3j,1m__1t__3j,1m__0t__chi2pass,1m__1t__chi2pass,1m__0t__chi2fail,1m__1t__chi2fail,1m__0t,1m__1t,1m__chi2pass,1m
+    --categories incl,1m__0t,1m__1t,1m__chi2pass,1m__chi2fail,1m
     --config run3_mtt_2024_nano_v15_limited_new
     --hist-producer all_weights
     #--skip-ratio
     #--workers 5
     #--workflow htcondor
     #--local-scheduler False --bugged right now for me
-    #--shape-norm
+    --shape-norm
     #--skip-ratio
-    #--remove-output 0,i
+    #--remove-output 0,a,y
     #--selector-steps Jet,BJet
     #--per-plot steps BUGGED
     --cms-label pw
     --file-types png
+    #--branches 1
     #--process-settings "tt,unstack,color=#e41a1c:st,unstack,label=Single Top"
 )
 
@@ -34,7 +35,7 @@ law run cf.PlotVariables1D \
     --datasets \
         data_mu_c,tt_sl_powheg,tt_dl_powheg,tt_fh_powheg \
     --producers \
-        category_ids,uic,features,weights \
+        category_ids,uic,features,weights,add_prod_cats \
     "${args[@]}"
 
 

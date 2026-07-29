@@ -138,7 +138,21 @@ def uic(
     # get leptons
     events = self[choose_lepton](events, **kwargs)
     lepton = events["Lepton"]
-    #lepton_charge = events["Muon"]["charge"] + events["Electron"]["charge"]
+
+    # select the charge of the single lepton chosen for this event
+    # (mirrors the channel-based muon/electron selection done in `choose_lepton`;
+    # a plain `Muon.charge + Electron.charge` is invalid since the two collections
+    # have independent, generally unequal, per-event lengths)
+    lepton_charge = ak.firsts(
+        ak.concatenate(
+            [
+                ak.mask(events.Muon.charge, events.channel_id == 2),
+                ak.mask(events.Electron.charge, events.channel_id == 1),
+            ],
+            axis=1,
+        ),
+        axis=1,
+    )
 
     # -- AK8 jets: only top-tagged jets well separated from main lepton
     topjet = events.FatJetTopTagDeltaRLepton
@@ -652,26 +666,22 @@ def uic(
     
     # -- calculate asymmetry -Alex
 
-    # use lepton charge as proxy WIP lepton charge?
-    if lepton_charge < 0:
-        antitop = top_lep
-        top = top_had
-        top_energy = top_had_energy
-        antitop_energy = top_lep_energy
-    else:
-        top = top_lep
-        antitop = top_had
-        antitop_energy = top_had_energy
-        top_energy = top_lep_energy
+    # use lepton charge to decide which reconstructed top is the "top" vs "antitop"
+    lepton_is_negative = ak.fill_none(lepton_charge < 0, False)
 
-    p_zt = lv_mass(top).pt * math.sinh(lv_mass(top).eta) #check this
-    p_ztbar = lv_mass(antitop).pt * math.sinh(lv_mass(antitop).eta)
+    top = ak.to_packed(ak.where(lepton_is_negative, top_had, top_lep))
+    antitop = ak.to_packed(ak.where(lepton_is_negative, top_lep, top_had))
+    top_energy = ak.where(lepton_is_negative, top_had_energy, top_lep_energy)
+    antitop_energy = ak.where(lepton_is_negative, top_lep_energy, top_had_energy)
+
+    p_zt = lv_mass(top).pt * np.sinh(lv_mass(top).eta)
+    p_ztbar = lv_mass(antitop).pt * np.sinh(lv_mass(antitop).eta)
 
     # y_t,y_tbar calculation
-    y_t = (1/2) * math.log((top_energy + p_zt)/(top_energy - p_zt))
-    y_tbar = (1/2) * math.log((antitop_energy + p_ztbar)/(antitop_energy - p_ztbar))
+    y_t = (1/2) * np.log((top_energy + p_zt)/(top_energy - p_zt))
+    y_tbar = (1/2) * np.log((antitop_energy + p_ztbar)/(antitop_energy - p_ztbar))
     delta_y = y_t - y_tbar
-    tanh_y = math.tanh(delta_y)
+    tanh_y = np.tanh(delta_y)
 
     # -- calculate angluar vars -Alex
 
@@ -829,10 +839,10 @@ def add_prod_cats(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 @add_prod_cats.requires
 def add_prod_cats_reqs(self: Producer, task: law.Task, reqs: dict) -> None:
-    if "ttbar" in reqs or task.producer != "add_prod_cats":
+    if "uic" in reqs or task.producer != "add_prod_cats":
         return
 
-    producer_inst = task.build_producer_inst("ttbar", params={
+    producer_inst = task.build_producer_inst("uic", params={
         "dataset": task.dataset,
         "dataset_inst": task.dataset_inst,
         "config": task.config,
