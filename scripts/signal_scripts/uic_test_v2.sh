@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 
 #
-# Test 
+# Test angular variable implementation
 # only mu data implemented currently
 #
 
 # common arguments for all tasks
 args=(
-    --version uic_v1
+    --version uic_v2
     --categories incl,1m__0t,1m__1t,1m__chi2pass,1m__chi2fail,1m
     --config run3_mtt_2024_nano_v15_limited_new
     --hist-producer all_weights
     #--skip-ratio
-    #--workers 5
-    #--workflow htcondor
+    --workers 5
+    --workflow htcondor
     #--local-scheduler False --bugged right now for me
     --shape-norm
     #--skip-ratio
@@ -29,7 +29,7 @@ args=(
 # lotta jet stuffs
 law run cf.PlotVariables1D \
     --variables \
-        delta_y,tanh_y,top_mass,antitop_mass \
+        bjet_had_mass,n_bjet_had \
     --processes \
         data,tt_sl,tt_dl,tt_fh,st,w_lnu,qcd,vv,dy \
     --datasets \

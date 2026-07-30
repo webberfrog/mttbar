@@ -42,7 +42,7 @@ logger = law.logger.get_logger(__name__)
         "FatJetTopTagDeltaRLepton.phi", "FatJetTopTagDeltaRLepton.mass",
         "FatJetTopTagDeltaRLepton.msoftdrop", 
         "FatJetTopTagDeltaRLepton.subJetIdx1", "FatJetTopTagDeltaRLepton.subJetIdx2",
-        "SubJet.pt", "SubJet.eta", "SubJet.phi", "SubJet.mass", "SubJet.btagDeepB",
+        "SubJet.pt", "SubJet.eta", "SubJet.phi", "SubJet.mass", "SubJet.btagUParTAK4B",
         "Electron.charge", "Muon.charge",
     },
     produces={
@@ -684,7 +684,7 @@ def uic(
     subjet2 = ak.firsts(events.SubJet[ak.singletons(subjet_idx2)])
 
     subjets = ak.concatenate([ak.singletons(subjet1), ak.singletons(subjet2)], axis=1)
-    subjet_score_argmax = ak.argmax(subjets.btagDeepB, axis=1, keepdims=True)
+    subjet_score_argmax = ak.argmax(subjets.btagUParTAK4B, axis=1, keepdims=True)
     hadronic_b_boosted = lv_mass(ak.firsts(subjets[subjet_score_argmax]))
 
     # combine both regimes per event, same pattern used to merge `comb_results`
@@ -734,8 +734,8 @@ def uic(
     p_ztbar = lv_mass(antitop).pt * np.sinh(lv_mass(antitop).eta)
 
     # y_t,y_tbar calculation
-    y_t = (1/2) * np.log((top_energy + p_zt)/(top_energy - p_zt))
-    y_tbar = (1/2) * np.log((antitop_energy + p_ztbar)/(antitop_energy - p_ztbar))
+    y_t = abs((1/2) * np.log((top_energy + p_zt)/(top_energy - p_zt)))
+    y_tbar = abs((1/2) * np.log((antitop_energy + p_ztbar)/(antitop_energy - p_ztbar)))
     delta_y = y_t - y_tbar
     tanh_y = np.tanh(delta_y)
 
@@ -743,21 +743,13 @@ def uic(
 
     # boost lepton and hadronic b
     # lepton already boosted
-    #b_had = lv_mass(hadronic_b) WIP 
-    #b_had_ttrest = b_had.boost(-ttbar.boostvec) WIP how to find b_had
+    b_had_ttrest = hadronic_b_boosted.boost(-ttbar.boostvec)
 
     # calculate cos_theta_ent
     #cos_theta_ent = top_ttrest.pvec.dot(ttbar.pvec) / (ttbar_ttrest.pvec.p * top_ttrest.pvec.p) #WIP is ttbar in ttbar rest unit z vector
 
     # calculate cosine of hadronic b and lepton from dot product and magnitudes, for entaglement measurement
     #cos_phi = b_had_ttrest.pvec.dot(top_lep_ttrest.pvec) / (b_had_ttrest.pvec.p * top_lep_ttrest.pvec.p) #WIP 
-
-    # calculate D and D_t
-    # calculate N_p and N_m
-    # if cos_phi >=0:
-    #     N_p += 1
-    # else:
-    #     N_m += 1
 
     # calculate D and D_t
     # use lv_xyzt to apply P and find D_t

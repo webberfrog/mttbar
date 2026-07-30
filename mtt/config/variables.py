@@ -446,8 +446,7 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"${var_label}({{{kind_label}}})$",
             )
 
-    # b-jet from the hadronic top decay (AK4 b-jet in resolved events,
-    # the AK8 jet itself in boosted events)
+    # b-jet from the hadronic top decay (AK4 b-jet in resolved events, AK8 subjet in merged)
     for var, var_label, var_unit, var_binning in [
         ("mass", "M", "GeV", (50, 0, 100)),
         ("pt", "p_{T}", "GeV", (50, 0, 500)),

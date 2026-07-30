@@ -976,7 +976,7 @@ def add_new_config(
             "FatJetTopTagDeltaRLepton.{subJetIdx1,subJetIdx2}",
 
             # AK8 subjets (needed to pick the higher b-tag-score subjet in the boosted regime)
-            "SubJet.{pt,eta,phi,mass,btagDeepB}",
+            "SubJet.{pt,eta,phi,mass,btagUParTAK4B}",
 
             # generator quantities
             "Generator.*",
