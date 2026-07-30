@@ -1,0 +1,161 @@
+diff --git a/mtt/config/run3/uic_mtt_config.py b/mtt/config/run3/uic_mtt_config.py
+index 4306c4f..fe527f7 100644
+--- a/mtt/config/run3/uic_mtt_config.py
++++ b/mtt/config/run3/uic_mtt_config.py
+@@ -973,6 +973,10 @@ def add_new_config(
+             "{FatJet,FatJetTopTag,FatJetTopTagDeltaRLepton}.{tau1,tau2,tau3}",
+             "FatJetTopTagDeltaRLepton.msoftdrop",
+             "FatJetTopTagDeltaRLepton.deepTagDeltaRLeptonMD_TvsQCD",
++            "FatJetTopTagDeltaRLepton.{subJetIdx1,subJetIdx2}",
++
++            # AK8 subjets (needed to pick the higher b-tag-score subjet in the boosted regime)
++            "SubJet.{pt,eta,phi,mass,btagDeepB}",
+ 
+             # generator quantities
+             "Generator.*",
+diff --git a/mtt/config/variables.py b/mtt/config/variables.py
+index caacc8f..0b8a83e 100644
+--- a/mtt/config/variables.py
++++ b/mtt/config/variables.py
+@@ -446,6 +446,30 @@ def add_variables(config: od.Config) -> None:
+                 x_title=rf"${var_label}({{{kind_label}}})$",
+             )
+ 
++    # b-jet from the hadronic top decay (AK4 b-jet in resolved events,
++    # the AK8 jet itself in boosted events)
++    for var, var_label, var_unit, var_binning in [
++        ("mass", "M", "GeV", (50, 0, 100)),
++        ("pt", "p_{T}", "GeV", (50, 0, 500)),
++        ("eta", r"\eta", None, (50, -2.5, 2.5)),
++        ("phi", r"\phi", None, (50, -np.pi, np.pi)),
++    ]:
++        config.add_variable(
++            name=f"bjet_had_{var}",
++            expression=f"TTbar.bjet_had_{var}",
++            binning=var_binning,
++            unit=var_unit,
++            x_title=rf"${var_label}(b_{{had}})$",
++        )
++
++    config.add_variable(
++        name="n_bjet_had",
++        expression="TTbar.n_bjet_had",
++        binning=(4, -0.5, 3.5),
++        x_title=r"$N_{b-jets}$ (hadronic top)",
++        y_title="Events",
++    )
++
+     # cutflow variables
+ 
+     # Jet properties
+diff --git a/mtt/production/ttbar_reco_uic.py b/mtt/production/ttbar_reco_uic.py
+index cd9f7ba..150e446 100644
+--- a/mtt/production/ttbar_reco_uic.py
++++ b/mtt/production/ttbar_reco_uic.py
+@@ -41,6 +41,8 @@ logger = law.logger.get_logger(__name__)
+         "FatJetTopTagDeltaRLepton.pt", "FatJetTopTagDeltaRLepton.eta",
+         "FatJetTopTagDeltaRLepton.phi", "FatJetTopTagDeltaRLepton.mass",
+         "FatJetTopTagDeltaRLepton.msoftdrop", 
++        "FatJetTopTagDeltaRLepton.subJetIdx1", "FatJetTopTagDeltaRLepton.subJetIdx2",
++        "SubJet.pt", "SubJet.eta", "SubJet.phi", "SubJet.mass", "SubJet.btagDeepB",
+         "Electron.charge", "Muon.charge",
+     },
+     produces={
+@@ -125,6 +127,7 @@ def uic(
+     # load coffea behaviors for simplified arithmetic with vectors
+     events = ak.Array(events, behavior=coffea.nanoevents.methods.nanoaod.behavior)
+     events["Jet"] = ak.with_name(events.Jet, "PtEtaPhiMLorentzVector")
++    events["BJet"] = ak.with_name(events.BJet, "PtEtaPhiMLorentzVector")
+     events["FatJetTopTagDeltaRLepton"] = ak.with_name(events.FatJetTopTagDeltaRLepton, "PtEtaPhiMLorentzVector")
+     events = attach_coffea_behavior(
+         events,
+@@ -168,6 +171,19 @@ def uic(
+     jet_isolated = ak.fill_none(delta_r_jet_topjet > 1.2, True)
+     jet = jet[jet_isolated]
+ 
++    # per-jet b-tag flag, obtained by geometric matching against the (separately
++    # b-tag-selected) `BJet` collection. Every b-tagged jet is by construction also
++    # part of the main `Jet` collection, so matching by (near-zero) delta-R against
++    # the same physical jet is robust and avoids needing the raw tagger score/working
++    # point again at this stage.
++    dr_jet_bjet = ak.min(jet.metric_table(events.BJet), axis=2)
++    jet_is_b = ak.fill_none(dr_jet_bjet < 0.01, False)
++
++    # raw b-tag discriminant score per jet, used to rank candidates if more than
++    # one jet in the hadronic-top combination passes the b-tag working point
++    btag_column = self.config_inst.x.jet_selection.ak4.btagger.column
++    jet_btag_score = jet[btag_column]
++
+     # split jet array into boosted/resolved cases
+     jet_resolved = ak.where(
+         is_boosted,
+@@ -641,6 +657,46 @@ def uic(
+     n_jet_had = comb_results["n_jet_had"]
+     n_jet_lep = comb_results["n_jet_lep"]
+ 
++    # -- identify the b-jet assigned to the hadronic top decay
++    # resolved regime: among the AK4 jets assigned to the hadronic top decay,
++    # take the one with the highest b-tag score that also passes the b-tag
++    # working point (result is missing if none of them do)
++    had_jets = jet[jet_idxs_had]
++    had_jet_is_b = jet_is_b[jet_idxs_had]
++    had_jet_btag_score = jet_btag_score[jet_idxs_had]
++
++    had_bjets = had_jets[had_jet_is_b]
++    had_bjet_scores = had_jet_btag_score[had_jet_is_b]
++    n_bjet_had = ak.fill_none(ak.num(had_bjets, axis=1), 0)
++
++    bjet_score_argmax = ak.argmax(had_bjet_scores, axis=1, keepdims=True)
++    hadronic_b_resolved = ak.firsts(had_bjets[bjet_score_argmax])
++
++    # boosted regime: the hadronic top is identified with a single merged AK8 jet
++    # with two soft-drop subjets; pick whichever subjet has the higher b-tag score
++    # as a stand-in for "the" hadronic b-jet (subjet indices are local to the
++    # per-event `SubJet` collection, with -1 meaning "no such subjet")
++    topjet_full = ak.firsts(topjet)  # full FatJetTopTagDeltaRLepton record, one candidate per boosted event
++
++    subjet_idx1 = ak.mask(topjet_full.subJetIdx1, topjet_full.subJetIdx1 >= 0)
++    subjet_idx2 = ak.mask(topjet_full.subJetIdx2, topjet_full.subJetIdx2 >= 0)
++    subjet1 = ak.firsts(events.SubJet[ak.singletons(subjet_idx1)])
++    subjet2 = ak.firsts(events.SubJet[ak.singletons(subjet_idx2)])
++
++    subjets = ak.concatenate([ak.singletons(subjet1), ak.singletons(subjet2)], axis=1)
++    subjet_score_argmax = ak.argmax(subjets.btagDeepB, axis=1, keepdims=True)
++    hadronic_b_boosted = lv_mass(ak.firsts(subjets[subjet_score_argmax]))
++
++    # combine both regimes per event, same pattern used to merge `comb_results`
++    hadronic_b_fields = {
++        var: ak.where(
++            is_boosted,
++            getattr(hadronic_b_boosted, var),
++            getattr(hadronic_b_resolved, var),
++        )
++        for var in ("pt", "eta", "phi", "mass")
++    }
++
+     # store final chi2 scores
+     top_had_chi2 = comb_results["top_had_chi2"]
+     top_lep_chi2 = comb_results["top_lep_chi2"]
+@@ -714,6 +770,8 @@ def uic(
+         events = set_ak_column(events, f"TTbar.{var}", ak.fill_none(getattr(ttbar, var), EMPTY_FLOAT))
+         events = set_ak_column(events, f"TTbar.top_{var}", ak.fill_none(getattr(top, var), EMPTY_FLOAT))
+         events = set_ak_column(events, f"TTbar.antitop_{var}", ak.fill_none(getattr(antitop, var), EMPTY_FLOAT))
++        events = set_ak_column(events, f"TTbar.bjet_had_{var}", ak.fill_none(hadronic_b_fields[var], EMPTY_FLOAT))
++    events = set_ak_column(events, "TTbar.n_bjet_had", n_bjet_had)
+     events = set_ak_column(events, "TTbar.top_had_energy", ak.fill_none(top_had_energy, EMPTY_FLOAT))
+     events = set_ak_column(events, "TTbar.top_lep_energy", ak.fill_none(top_lep_energy, EMPTY_FLOAT))
+     events = set_ak_column(events, "TTbar.n_jet_had", ak.fill_none(n_jet_had, -1))
+@@ -816,6 +874,13 @@ def uic_init(self: Producer) -> None:
+         self.uses |= {ttbar_gen}
+         self.produces |= {ttbar_gen}
+ 
++    # add the configured b-tag discriminant column dynamically, since its name
++    # depends on the analysis config (e.g. "btagDeepFlavB")
++    config_inst = getattr(self, "config_inst", None)
++    if config_inst:
++        btag_column = config_inst.x.jet_selection.ak4.btagger.column
++        self.uses.add(f"Jet.{btag_column}")
++
+ 
+ @producer(
+     produces={"category_ids"},

@@ -446,6 +446,30 @@ def add_variables(config: od.Config) -> None:
                 x_title=rf"${var_label}({{{kind_label}}})$",
             )
 
+    # b-jet from the hadronic top decay (AK4 b-jet in resolved events,
+    # the AK8 jet itself in boosted events)
+    for var, var_label, var_unit, var_binning in [
+        ("mass", "M", "GeV", (50, 0, 100)),
+        ("pt", "p_{T}", "GeV", (50, 0, 500)),
+        ("eta", r"\eta", None, (50, -2.5, 2.5)),
+        ("phi", r"\phi", None, (50, -np.pi, np.pi)),
+    ]:
+        config.add_variable(
+            name=f"bjet_had_{var}",
+            expression=f"TTbar.bjet_had_{var}",
+            binning=var_binning,
+            unit=var_unit,
+            x_title=rf"${var_label}(b_{{had}})$",
+        )
+
+    config.add_variable(
+        name="n_bjet_had",
+        expression="TTbar.n_bjet_had",
+        binning=(4, -0.5, 3.5),
+        x_title=r"$N_{b-jets}$ (hadronic top)",
+        y_title="Events",
+    )
+
     # cutflow variables
 
     # Jet properties

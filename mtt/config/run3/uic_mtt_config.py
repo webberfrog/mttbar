@@ -973,6 +973,10 @@ def add_new_config(
             "{FatJet,FatJetTopTag,FatJetTopTagDeltaRLepton}.{tau1,tau2,tau3}",
             "FatJetTopTagDeltaRLepton.msoftdrop",
             "FatJetTopTagDeltaRLepton.deepTagDeltaRLeptonMD_TvsQCD",
+            "FatJetTopTagDeltaRLepton.{subJetIdx1,subJetIdx2}",
+
+            # AK8 subjets (needed to pick the higher b-tag-score subjet in the boosted regime)
+            "SubJet.{pt,eta,phi,mass,btagDeepB}",
 
             # generator quantities
             "Generator.*",
