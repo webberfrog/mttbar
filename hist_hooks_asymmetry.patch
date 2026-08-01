@@ -1,0 +1,118 @@
+diff --git a/mtt/config/run3/uic_mtt_config.py b/mtt/config/run3/uic_mtt_config.py
+index 197f032..b55b9e6 100644
+--- a/mtt/config/run3/uic_mtt_config.py
++++ b/mtt/config/run3/uic_mtt_config.py
+@@ -22,6 +22,7 @@ from columnflow.config_util import (
+ )
+ from mtt.config.categories import add_categories_selection
+ from mtt.config.variables import add_variables
++from mtt.plotting.hist_hooks import hist_hooks
+ 
+ from mtt.config.datasets_uic import (
+     data_datasets,
+@@ -1041,4 +1042,7 @@ def add_new_config(
+     # add variables
+     add_variables(cfg)
+ 
++    # register custom hist hooks (usable via --hist-hooks <name>)
++    cfg.x.hist_hooks = hist_hooks
++
+     return cfg
+diff --git a/mtt/plotting/hist_hooks.py b/mtt/plotting/hist_hooks.py
+new file mode 100644
+index 0000000..dede7dc
+--- /dev/null
++++ b/mtt/plotting/hist_hooks.py
+@@ -0,0 +1,92 @@
++# coding: utf-8
++
++"""
++Custom hist hooks (see columnflow's ``HistHookMixin``), invoked via ``--hist-hooks <name>`` right
++before plotting to transform histograms in place.
++"""
++
++from __future__ import annotations
++
++import hist
++import numpy as np
++
++
++# axis names this hook knows how to asymmetrize, and the spin-analyzing-power prefactor
++# to apply for each (5.0 for both the lepton and the b-jet, per the current analysis note)
++_ASYMMETRY_AXES = {
++    "cos_phi": 5.0,
++    "cos_phi_tilde": 5.0,
++}
++
++
++def calculate_asymmetry(task, hists, category_name=None, variable_name=None, **kwargs):
++    """
++    Hist hook that replaces the ``cos_phi``/``cos_phi_tilde`` axis of a histogram with the
++    spin-correlation asymmetry
++
++        D = prefactor * (N(cos_phi > 0) - N(cos_phi < 0)) / (N(cos_phi > 0) + N(cos_phi < 0))
++
++    computed independently for every bin of the histogram's other axes (e.g. ``ttbar_mass``,
++    ``category``, ``shift``). The output histogram keeps the exact same axes as the input --
++    including the cos_phi(_tilde) axis itself -- with every bin along that axis in a given
++    "column" filled with that column's single D value, so it can be plotted with the same 2D
++    plotting machinery (e.g. ``cf.PlotVariables2D``) as the original entry counts.
++
++    If none of the variables being plotted is ``cos_phi``/``cos_phi_tilde``, the histograms are
++    returned unchanged.
++
++    Exemplary task call:
++
++    .. code-block:: bash
++
++        law run cf.PlotVariables2D --version v1 --processes tt_fh \\
++            --variables ttbar_mass-cos_phi --hist-hooks calculate_asymmetry
++    """
++    # figure out which of the plotted variables is the asymmetry axis, if any
++    plotted_vars = variable_name.split("-") if variable_name else []
++    sign_axis_name = next((name for name in plotted_vars if name in _ASYMMETRY_AXES), None)
++    if sign_axis_name is None:
++        return hists
++
++    prefactor = _ASYMMETRY_AXES[sign_axis_name]
++
++    new_hists = {}
++    for process_inst, h in hists.items():
++        if sign_axis_name not in h.axes.name:
++            new_hists[process_inst] = h
++            continue
++
++        # positive- and negative-cos_phi sub-histograms, with the sign axis summed away
++        h_pos = h[{sign_axis_name: slice(hist.loc(0), None, sum)}]
++        h_neg = h[{sign_axis_name: slice(None, hist.loc(0), sum)}]
++
++        n_pos = h_pos.values()
++        n_neg = h_neg.values()
++        denom = n_pos + n_neg
++
++        with np.errstate(divide="ignore", invalid="ignore"):
++            d = np.where(denom > 0, prefactor * (n_pos - n_neg) / denom, 0.0)
++
++        # broadcast the per-bin D value back across the (now-collapsed) sign axis
++        sign_axis_idx = h.axes.name.index(sign_axis_name)
++        d_broadcast = np.expand_dims(d, axis=sign_axis_idx)
++
++        h_out = h.copy()
++        view = h_out.view(flow=False)
++        if view.dtype.names:
++            # weighted storage (value, variance, ...): overwrite the value, zero the variance
++            # since D is a derived quantity and not itself an accumulated sum of weights
++            view["value"][...] = np.broadcast_to(d_broadcast, view["value"].shape)
++            view["variance"][...] = 0.0
++        else:
++            view[...] = np.broadcast_to(d_broadcast, view.shape)
++
++        new_hists[process_inst] = h_out
++
++    return new_hists
++
++
++# registry consumed by `config_inst.x.hist_hooks`
++hist_hooks = {
++    "calculate_asymmetry": calculate_asymmetry,
++}
