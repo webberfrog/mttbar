@@ -288,6 +288,14 @@ def add_variables(config: od.Config) -> None:
         y_title="Events",
     )
     config.add_variable(
+        name="ttbar_mass_1k",
+        expression="TTbar.mass",
+        binning=(14, 300, 1000),
+        unit="GeV",
+        x_title=r"$m({t}\overline{t})$",
+        y_title="Events",
+    )
+    config.add_variable(
         name="cos_theta_star",
         expression="TTbar.cos_theta_star",
         binning=(100, -1, 1),
@@ -466,6 +474,23 @@ def add_variables(config: od.Config) -> None:
         expression="TTbar.n_bjet_had",
         binning=(4, -0.5, 3.5),
         x_title=r"$N_{b-jets}$ (hadronic top)",
+        y_title="Events",
+    )
+
+    # entanglement/spin-correlation opening-angle observables (lepton vs hadronic b, each in its own parent top's rest frame, projected onto the nrk helicity basis)
+    config.add_variable(
+        name="cos_phi",
+        expression="TTbar.cos_phi",
+        binning=(40, -1.0, 1.0),
+        x_title=r"$\cos\varphi$",
+        y_title="Events",
+    )
+
+    config.add_variable(
+        name="cos_phi_tilde",
+        expression="TTbar.cos_phi_tilde",
+        binning=(40, -1.0, 1.0),
+        x_title=r"$\cos\tilde{\varphi}$",
         y_title="Events",
     )
 

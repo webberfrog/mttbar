@@ -183,6 +183,36 @@ def lv_sum(lv_arrays):
 
     return tmp_lv_sum
 
+def lv_nrk(top_ttrest, beam_ttrest):
+    """
+    Construct the orthonormal helicity basis (`k`, `n`, `r`) used for top-quark
+    spin-correlation observables, following the standard Bernreuther & Si
+    conventions (see e.g. arXiv:1508.05271).
+
+    `top_ttrest` must be the four-vector of the (charge-identified) top quark --
+    not the antitop -- and `beam_ttrest` the four-vector of one of the proton
+    beams, both already boosted into the ttbar rest frame.
+
+    Returns a dict of three unit three-vectors ``{"k": ..., "n": ..., "r": ...}``,
+    valid in the ttbar rest frame. The same basis vectors may then be used to
+    project the direction of any decay product, itself boosted into the rest
+    frame of its own parent (top or antitop), onto the (k, n, r) axes.
+    """
+    k_hat = top_ttrest.pvec.unit
+    p_hat = beam_ttrest.pvec.unit
+
+    cos_theta = k_hat.dot(p_hat)
+    # guard against floating-point roundoff pushing |cos_theta| a hair past 1
+    cos_theta = ak.where(cos_theta > 1.0, 1.0, ak.where(cos_theta < -1.0, -1.0, cos_theta))
+    sin_theta = np.sqrt(1 - cos_theta ** 2)
+    # sign(cos_theta) flip, following the common convention that keeps the
+    # (n, r) axes continuous across cos_theta = 0 (see e.g. arXiv:2311.02543)
+    sign = np.sign(cos_theta)
+
+    r_hat = (sign / sin_theta) * (p_hat - cos_theta * k_hat)
+    n_hat = (sign / sin_theta) * k_hat.cross(p_hat)
+
+    return {"k": k_hat, "n": n_hat, "r": r_hat}
 
 #
 # functions for matching between collections of Lorentz vectors

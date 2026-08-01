@@ -17,7 +17,7 @@ from columnflow.columnar_util import set_ak_column, EMPTY_FLOAT, attach_coffea_b
 from mtt.config.categories import add_categories_production
 from mtt.util import iter_chunks
 from mtt.production.util import (
-    ak_argcartesian, ak_arg_grouped_combinations, lv_xyzt, lv_mass, lv_sum,
+    ak_argcartesian, ak_arg_grouped_combinations, lv_xyzt, lv_mass, lv_sum, lv_nrk,
 )
 from mtt.production.lepton import choose_lepton
 from mtt.production.neutrino import neutrino_candidates
@@ -688,14 +688,14 @@ def uic(
     hadronic_b_boosted = lv_mass(ak.firsts(subjets[subjet_score_argmax]))
 
     # combine both regimes per event, same pattern used to merge `comb_results`
-    hadronic_b_fields = {
+    hadronic_b = lv_mass(ak.zip({
         var: ak.where(
             is_boosted,
             getattr(hadronic_b_boosted, var),
             getattr(hadronic_b_resolved, var),
         )
         for var in ("pt", "eta", "phi", "mass")
-    }
+    }))
 
     # store final chi2 scores
     top_had_chi2 = comb_results["top_had_chi2"]
@@ -730,6 +730,7 @@ def uic(
     top_energy = ak.where(lepton_is_negative, top_had_energy, top_lep_energy)
     antitop_energy = ak.where(lepton_is_negative, top_lep_energy, top_had_energy)
 
+    # p along beam direction for rapidity measurment
     p_zt = lv_mass(top).pt * np.sinh(lv_mass(top).eta)
     p_ztbar = lv_mass(antitop).pt * np.sinh(lv_mass(antitop).eta)
 
@@ -739,20 +740,52 @@ def uic(
     delta_y = y_t - y_tbar
     tanh_y = np.tanh(delta_y)
 
-    # -- calculate angluar vars -Alex
+    # -- calculate angular vars for entanglement/spin-correlation observables
 
-    # boost lepton and hadronic b
-    # lepton already boosted
-    b_had_ttrest = hadronic_b_boosted.boost(-ttbar.boostvec)
+    # physical top quark (not antitop), boosted into the ttbar rest frame,
+    # reusing the top_had/top_lep boosts already computed above
+    top_ttrest = ak.to_packed(ak.where(lepton_is_negative, top_had_ttrest, top_lep_ttrest))
 
-    # calculate cos_theta_ent
-    #cos_theta_ent = top_ttrest.pvec.dot(ttbar.pvec) / (ttbar_ttrest.pvec.p * top_ttrest.pvec.p) #WIP is ttbar in ttbar rest unit z vector
+    # proton beam direction: a fixed light-like four-vector along +z in the lab
+    # frame, boosted into the ttbar rest frame the same way as any decay product
+    beam_lab = lv_xyzt(ak.zip({
+        "x": ak.zeros_like(ttbar.pt),
+        "y": ak.zeros_like(ttbar.pt),
+        "z": ak.ones_like(ttbar.pt),
+        "t": ak.ones_like(ttbar.pt),
+    }))
+    beam_ttrest = beam_lab.boost(-ttbar.boostvec)
 
-    # calculate cosine of hadronic b and lepton from dot product and magnitudes, for entaglement measurement
-    #cos_phi = b_had_ttrest.pvec.dot(top_lep_ttrest.pvec) / (b_had_ttrest.pvec.p * top_lep_ttrest.pvec.p) #WIP 
+    # orthonormal helicity basis (k, n, r) in the ttbar rest frame
+    nrk = lv_nrk(top_ttrest, beam_ttrest)
 
-    # calculate D and D_t
-    # use lv_xyzt to apply P and find D_t
+    # propagate the lepton and the hadronic b-jet from the lab frame into the
+    # rest frame of their own parent top (lab -> ttbar rest frame -> parent-top
+    # rest frame), then take their direction of flight there
+    lepton_ttrest = lv_mass(lepton).boost(-ttbar.boostvec)
+    lepton_topframe = lepton_ttrest.boost(-top_lep_ttrest.boostvec)
+    lepton_dir = lepton_topframe.pvec.unit
+
+    hadronic_b_ttrest = hadronic_b.boost(-ttbar.boostvec)
+    hadronic_b_topframe = hadronic_b_ttrest.boost(-top_had_ttrest.boostvec)
+    hadronic_b_dir = hadronic_b_topframe.pvec.unit
+
+    # project both directions onto the shared (k, n, r) basis
+    lepton_k = lepton_dir.dot(nrk["k"])
+    lepton_n = lepton_dir.dot(nrk["n"])
+    lepton_r = lepton_dir.dot(nrk["r"])
+
+    bjet_k = hadronic_b_dir.dot(nrk["k"])
+    bjet_n = hadronic_b_dir.dot(nrk["n"])
+    bjet_r = hadronic_b_dir.dot(nrk["r"])
+
+    # cos_phi: cosine of the opening angle between the two decay-product
+    # directions, each expressed in its own parent's rest frame
+    cos_phi = lepton_k * bjet_k + lepton_n * bjet_n + lepton_r * bjet_r
+
+    # cos_phi_tilde: same, but with the n-component of the *physical top's*
+    # decay product sign-flipped.
+    cos_phi_tilde = lepton_k * bjet_k - lepton_n * bjet_n + lepton_r * bjet_r
 
 
     # write out columns
@@ -762,8 +795,11 @@ def uic(
         events = set_ak_column(events, f"TTbar.{var}", ak.fill_none(getattr(ttbar, var), EMPTY_FLOAT))
         events = set_ak_column(events, f"TTbar.top_{var}", ak.fill_none(getattr(top, var), EMPTY_FLOAT))
         events = set_ak_column(events, f"TTbar.antitop_{var}", ak.fill_none(getattr(antitop, var), EMPTY_FLOAT))
-        events = set_ak_column(events, f"TTbar.bjet_had_{var}", ak.fill_none(hadronic_b_fields[var], EMPTY_FLOAT))
+        events = set_ak_column(events, f"TTbar.bjet_had_{var}", ak.fill_none(hadronic_b[var], EMPTY_FLOAT))
+    #Alex angular vars
     events = set_ak_column(events, "TTbar.n_bjet_had", n_bjet_had)
+    events = set_ak_column(events, "TTbar.cos_phi", ak.fill_none(cos_phi, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.cos_phi_tilde", ak.fill_none(cos_phi_tilde, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.top_had_energy", ak.fill_none(top_had_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.top_lep_energy", ak.fill_none(top_lep_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.n_jet_had", ak.fill_none(n_jet_had, -1))
@@ -776,8 +812,7 @@ def uic(
     events = set_ak_column(events, "TTbar.chi2", ak.fill_none(chi2, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_theta_star", ak.fill_none(cos_theta_star, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.abs_cos_theta_star", ak.fill_none(abs_cos_theta_star, EMPTY_FLOAT))
-    #Alex angular vars
-    #events = set_ak_column(events, "TTbar.cos_phi", ak.fill_none(cos_phi, EMPTY_FLOAT))
+    #Alex asymmetry
     events = set_ak_column(events, "TTbar.delta_y", ak.fill_none(delta_y, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.tanh_y", ak.fill_none(tanh_y, EMPTY_FLOAT))
 
