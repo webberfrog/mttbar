@@ -22,6 +22,7 @@ from columnflow.config_util import (
 )
 from mtt.config.categories import add_categories_selection
 from mtt.config.variables import add_variables
+from mtt.plotting.hist_hooks import hist_hooks
 
 from mtt.config.datasets_uic import (
     data_datasets,
@@ -1040,5 +1041,8 @@ def add_new_config(
 
     # add variables
     add_variables(cfg)
+
+    # register custom hist hooks (usable via --hist-hooks <name>)
+    cfg.x.hist_hooks = hist_hooks
 
     return cfg

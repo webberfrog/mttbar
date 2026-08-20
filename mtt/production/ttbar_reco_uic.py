@@ -800,6 +800,7 @@ def uic(
     events = set_ak_column(events, "TTbar.n_bjet_had", n_bjet_had)
     events = set_ak_column(events, "TTbar.cos_phi", ak.fill_none(cos_phi, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_phi_tilde", ak.fill_none(cos_phi_tilde, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.cos_theta", ak.fill_none(nrk["cos_theta"], EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.top_had_energy", ak.fill_none(top_had_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.top_lep_energy", ak.fill_none(top_lep_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.n_jet_had", ak.fill_none(n_jet_had, -1))

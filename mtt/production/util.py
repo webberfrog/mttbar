@@ -193,8 +193,9 @@ def lv_nrk(top_ttrest, beam_ttrest):
     not the antitop -- and `beam_ttrest` the four-vector of one of the proton
     beams, both already boosted into the ttbar rest frame.
 
-    Returns a dict of three unit three-vectors ``{"k": ..., "n": ..., "r": ...}``,
-    valid in the ttbar rest frame. The same basis vectors may then be used to
+    Returns a dict of three unit three-vectors ``{"k": ..., "n": ..., "r": ...}`` plus the
+    scalar ``"cos_theta"`` (the top quark's production angle cosine w.r.t. the beam, i.e.
+    ``k . p_hat``), valid in the ttbar rest frame. The same basis vectors may then be used to
     project the direction of any decay product, itself boosted into the rest
     frame of its own parent (top or antitop), onto the (k, n, r) axes.
     """
@@ -212,7 +213,7 @@ def lv_nrk(top_ttrest, beam_ttrest):
     r_hat = (sign / sin_theta) * (p_hat - cos_theta * k_hat)
     n_hat = (sign / sin_theta) * k_hat.cross(p_hat)
 
-    return {"k": k_hat, "n": n_hat, "r": r_hat}
+    return {"k": k_hat, "n": n_hat, "r": r_hat, "cos_theta": cos_theta}
 
 #
 # functions for matching between collections of Lorentz vectors

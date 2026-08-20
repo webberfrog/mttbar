@@ -8,18 +8,18 @@
 
 # common arguments for all tasks
 args=(
-    --version uic_v3
+    --version uic_v3_4
     --categories incl,1m__0t,1m__1t,1m__chi2pass,1m__chi2fail,1m
     --config run3_mtt_2024_nano_v15_limited_new
     --hist-producer all_weights
-    #--hist-hooks calculate_asymmetry
+    --hist-hooks calculate_asymmetry
     #--skip-ratio
     --workers 5
     --workflow htcondor
     #--local-scheduler False --bugged right now for me
     #--shape-norm
     #--skip-ratio
-    #--remove-output 0,a,y
+    --remove-output 0,a,y
     #--selector-steps Jet,BJet
     #--per-plot steps BUGGED
     --cms-label pw
@@ -33,9 +33,9 @@ law run cf.PlotVariables2D \
     --variables \
         cos_theta-ttbar_mass_1k-cos_phi,cos_theta-ttbar_mass_1k-cos_phi_tilde \
     --processes \
-        data,tt_sl,tt_dl,tt_fh,st,w_lnu,qcd,vv,dy \
+        tt_sl \
     --datasets \
-        data_mu_c,tt_sl_powheg,tt_dl_powheg,tt_fh_powheg \
+        tt_sl_powheg \
     --producers \
         category_ids,uic,features,weights,add_prod_cats \
     "${args[@]}"

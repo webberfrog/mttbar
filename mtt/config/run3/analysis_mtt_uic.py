@@ -9,6 +9,7 @@ import os
 import law
 import order as od
 
+from mtt.plotting.hist_hooks import hist_hooks
 
 thisdir = os.path.dirname(os.path.abspath(__file__))
 
@@ -60,6 +61,11 @@ if not law.util.flag_to_bool(os.getenv("MTT_BUNDLE_CMSSW", "1")):
 # config groups for conveniently looping over certain configs
 # (used in wrapper_factory)
 ana.x.config_groups = {}
+
+# custom hist hooks (usable via --hist-hooks <name>); registered at the analysis level since
+# multi-config tasks only ever consult analysis_inst.x.hist_hooks, not the per-config dict
+ana.x.hist_hooks = hist_hooks
+ana_new.x.hist_hooks = hist_hooks
 
 #
 # set up configs

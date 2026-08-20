@@ -494,6 +494,14 @@ def add_variables(config: od.Config) -> None:
         y_title="Events",
     )
 
+    config.add_variable(
+        name="cos_theta",
+        expression="TTbar.cos_theta",
+        binning=(40, -1.0, 1.0),
+        x_title=r"$\cos\theta$",
+        y_title="Events",
+    )
+
     # cutflow variables
 
     # Jet properties
