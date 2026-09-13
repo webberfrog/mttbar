@@ -360,6 +360,27 @@ def add_variables(config: od.Config) -> None:
         x_title=r"$m({t}\overline{t})^{gen}$",
         y_title="Events",
     )
+
+    # coarse 5-bin reco/gen m(ttbar) pair for migration-matrix plots
+    # (see mtt.plotting.plot_functions_2d.plot_2d_migration)
+    mtt_5bin_edges = [0, 500, 750, 1000, 1500, 6000]
+    config.add_variable(
+        name="mtt_reco_5bin",
+        expression="TTbar.mass",
+        binning=mtt_5bin_edges,
+        unit="GeV",
+        x_title=r"$m({t}\overline{t})^{reco}$",
+        y_title="Events",
+    )
+    config.add_variable(
+        name="mtt_gen_5bin",
+        expression="TTbar.gen_mass",
+        binning=mtt_5bin_edges,
+        unit="GeV",
+        x_title=r"$m({t}\overline{t})^{gen}$",
+        y_title="Events",
+    )
+
     config.add_variable(
         name="gen_cos_theta_star",
         expression="TTbar.gen_cos_theta_star",
