@@ -40,7 +40,7 @@ args=(
     --workers 5
     --workflow htcondor
     --remove-output 0,a,y
-    --cms-label pw
+    --cms-label wip
     --file-types png
     # kappa_lep=1.0, kappa_bjet=0.4 are already the plot function's defaults;
 )
