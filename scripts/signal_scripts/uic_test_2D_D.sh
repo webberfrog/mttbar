@@ -14,8 +14,8 @@ args=(
     --hist-producer all_weights
     --hist-hooks calculate_asymmetry
     #--skip-ratio
-    --workers 5
-    --workflow htcondor
+    #--workers 5
+    #--workflow htcondor
     #--local-scheduler False --bugged right now for me
     #--shape-norm
     #--skip-ratio

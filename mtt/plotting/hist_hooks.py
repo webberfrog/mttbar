@@ -13,8 +13,7 @@ hist = maybe_import("hist")
 np = maybe_import("numpy")
 
 
-# axis names this hook knows how to asymmetrize, and the spin-analyzing-power prefactor
-# to apply for each (5.0 for both the lepton and the b-jet, per the current analysis note)
+# axis names this hook knows how to asymmetrize, and the spin-analyzing-power prefactor to apply for each (5.0 for both the lepton and the b-jet, per the current analysis note)
 _ASYMMETRY_AXES = {
     "cos_phi": 2.5,
     "cos_phi_tilde": 2.5,
@@ -45,7 +44,6 @@ def _asymmetrize_hist(h, sign_axis_name, prefactor, collapse):
     denom = n_pos + n_neg
 
     # variances of each partition; fall back to a Poisson assumption (variance == value)
-    # if the histogram's storage type doesn't track variances separately
     var_pos = h_pos.variances()
     var_neg = h_neg.variances()
     if var_pos is None:
@@ -58,7 +56,6 @@ def _asymmetrize_hist(h, sign_axis_name, prefactor, collapse):
         # (negative generator weights), a sparse bin can have N_pos or N_neg come out negative
         # from weight-sign cancellation, which breaks the mathematical guarantee that
         # |N_pos - N_neg| <= N_pos + N_neg and lets D blow up far past [-prefactor, prefactor].
-        # Treat such bins as invalid, the same as empty (denom <= 0) ones.
         valid = (denom > 0) & (n_pos >= 0) & (n_neg >= 0)
 
         d = np.where(valid, prefactor * (n_pos - n_neg) / denom, 0.0)
@@ -100,6 +97,74 @@ def _asymmetrize_hist(h, sign_axis_name, prefactor, collapse):
     return h_out
 
 
+def _combine_category_leaves(h, config_inst, category_name):
+    """
+    Identify the leaf categories of `category_name` that are present as bins on `h`'s
+    ``category`` axis -- mirroring the leaf resolution and selection performed later in
+    ``PlotVariablesBaseSingleShift.run()`` (columnflow's ``columnflow/tasks/plotting.py``) --
+    and return `(leaf_names, h_summed)`, where `h_summed` has the ``category`` axis fully
+    reduced (summed) over just those leaf bins.
+
+    This hook runs *before* that later category selection/summation step, so at this point `h`'s
+    ``category`` axis still holds bins for every leaf category in the whole tree, not just those
+    of the category actually being plotted. Reducing to `category_name`'s leaves here -- on the
+    still-additive raw counts, before D is computed -- mirrors what `calculate_asymmetry` already
+    does for processes, and for the same reason: computing D independently per leaf category and
+    letting the framework sum those already-computed D values afterwards would be invalid, since
+    D is not additive.
+    """
+    category_inst = config_inst.get_category(category_name)
+    leaf_category_insts = category_inst.get_leaf_categories() or [category_inst]
+    leaf_names = [c.name for c in leaf_category_insts if c.name in h.axes["category"]]
+
+    if not leaf_names:
+        # none of the expected leaves are present on the axis; nothing sensible to reduce
+        return [], h
+
+    h_summed = h[{"category": [hist.loc(name) for name in leaf_names]}]
+    h_summed = h_summed[{"category": sum}]
+
+    return leaf_names, h_summed
+
+
+def _spread_over_category_leaves(h_full, h_reduced, sign_axis_name, collapse, leaf_names):
+    """
+    Embed the single combined D value (and its variance), held in `h_reduced` (which has no
+    ``category`` axis), back into each of `leaf_names`' bins on a copy of `h_full`'s ``category``
+    axis -- or, if `collapse`, of `h_full`'s sign-axis-summed counterpart, to match `h_reduced`'s
+    shape -- with each leaf's value/variance divided by the number of leaves.
+
+    `PlotVariablesBaseSingleShift.run()` subsequently selects exactly these leaf bins and sums
+    them; dividing by the leaf count here means that sum recovers the single combined D value
+    (and its variance) exactly, instead of invalidly summing independently-computed per-leaf D
+    values.
+    """
+    if collapse:
+        # same sign-axis reduction as the collapse branch of `_asymmetrize_hist`, just to get a
+        # correctly shaped (category-intact, sign-axis-dropped) template to write into
+        template = h_full[{sign_axis_name: slice(hist.loc(0), None, sum)}].copy()
+    else:
+        template = h_full.copy()
+
+    n_leaves = len(leaf_names)
+    cat_axis_idx = template.axes.name.index("category")
+    view = template.view(flow=False)
+    reduced_view = h_reduced.view(flow=False)
+
+    for name in leaf_names:
+        bin_idx = template.axes["category"].index(name)
+        sl = [slice(None)] * view.ndim
+        sl[cat_axis_idx] = bin_idx
+        sl = tuple(sl)
+        if view.dtype.names:
+            view["value"][sl] = reduced_view["value"] / n_leaves
+            view["variance"][sl] = reduced_view["variance"] / n_leaves
+        else:
+            view[sl] = reduced_view / n_leaves
+
+    return template
+
+
 def calculate_asymmetry(task, hists, category_name=None, variable_name=None, **kwargs):
     """
     Hist hook that replaces the ``cos_phi``/``cos_phi_tilde`` axis of a histogram with the
@@ -132,6 +197,13 @@ def calculate_asymmetry(task, hists, category_name=None, variable_name=None, **k
     per-process D values, as the default plot function does for raw counts, would be wrong. The
     result is carried under a single representative process key; the plot's legend will
     therefore only show that one process's label.
+
+    For the same reason, D is also computed once from counts combined across the leaf categories
+    of the category being plotted, rather than independently per leaf category. This hook runs
+    before the task reduces the histogram's ``category`` axis down to those leaves and sums them
+    (see ``PlotVariablesBaseSingleShift.run()``), so the combined-D value (and its variance) is
+    pre-divided by the number of leaves and written into each leaf's bin, such that the task's
+    later sum recovers it exactly instead of invalidly summing independent per-leaf D values.
 
     If none of the variables being plotted is ``cos_phi``/``cos_phi_tilde``, the histograms are
     returned unchanged.
@@ -174,7 +246,22 @@ def calculate_asymmetry(task, hists, category_name=None, variable_name=None, **k
         for process_inst in process_insts[1:]:
             h_total = h_total + config_hists[process_inst]
 
-        h_out = _asymmetrize_hist(h_total, sign_axis_name, prefactor, collapse)
+        # this hook runs before the framework reduces the `category` axis down to the leaves of
+        # the category actually being plotted (see `_combine_category_leaves`), so `h_total`'s
+        # `category` axis may still hold bins for leaf categories that don't even belong to this
+        # plot. Sum the raw (still-additive) counts across just the relevant leaves first, so D
+        # is computed once on the combination -- the same reasoning as combining processes above.
+        leaf_names = []
+        h_for_d = h_total
+        if "category" in h_total.axes.name and category_name is not None:
+            leaf_names, h_for_d = _combine_category_leaves(h_total, config_inst, category_name)
+
+        h_reduced = _asymmetrize_hist(h_for_d, sign_axis_name, prefactor, collapse)
+
+        if leaf_names:
+            h_out = _spread_over_category_leaves(h_total, h_reduced, sign_axis_name, collapse, leaf_names)
+        else:
+            h_out = h_reduced
 
         # carry the single combined result under one representative process key, since the
         # per-process breakdown is no longer meaningful for a derived quantity like D; note

@@ -502,6 +502,38 @@ def add_variables(config: od.Config) -> None:
         y_title="Events",
     )
 
+    # normalized (unit-vector) components of the lepton and hadronic b-jet flight directions,
+    # each in its own parent top's rest frame, projected onto the shared (k, n, r) helicity basis
+    for obj, obj_label in (("lepton", r"\ell"), ("bjet", "b")):
+        for component in ("k", "n", "r"):
+            config.add_variable(
+                name=f"{obj}_{component}",
+                expression=f"TTbar.{obj}_{component}",
+                binning=(40, -1.0, 1.0),
+                x_title=rf"$\hat{{{component}}} \cdot \hat{{p}}_{{{obj_label}}}$",
+                y_title="Events",
+            )
+
+    # charge-corrected top/antitop-side counterparts of the lepton_{k,n,r}/bjet_{k,n,r} variables
+    # above: each is masked (EMPTY_FLOAT, landing in the underflow bin) outside the event
+    # sub-sample -- selected by the lepton charge -- in which it is meaningful. See
+    # `mtt.production.ttbar_reco_uic.uic` for the exact definitions. Used by
+    # `mtt.plotting.plot_functions.plot_spin_density_matrix` to extract the top/antitop
+    # polarization vectors and the spin correlation matrix from expectation values.
+    for role, role_label in (("top", "t"), ("atop", r"\bar{t}")):
+        for obj, obj_label in (("lepton", r"\ell"), ("bjet", "b")):
+            for component in ("k", "n", "r"):
+                config.add_variable(
+                    name=f"{role}_{obj}_{component}",
+                    expression=f"TTbar.{role}_{obj}_{component}",
+                    binning=(40, -1.0, 1.0),
+                    x_title=(
+                        rf"$\hat{{{component}}} \cdot \hat{{p}}_{{{obj_label}}}$ "
+                        rf"({role_label} decays via {obj})"
+                    ),
+                    y_title="Events",
+                )
+
     # cutflow variables
 
     # Jet properties

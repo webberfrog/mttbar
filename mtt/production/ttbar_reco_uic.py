@@ -801,6 +801,47 @@ def uic(
     events = set_ak_column(events, "TTbar.cos_phi", ak.fill_none(cos_phi, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_phi_tilde", ak.fill_none(cos_phi_tilde, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_theta", ak.fill_none(nrk["cos_theta"], EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.lepton_k", ak.fill_none(lepton_k, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.lepton_n", ak.fill_none(lepton_n, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.lepton_r", ak.fill_none(lepton_r, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.bjet_k", ak.fill_none(bjet_k, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.bjet_n", ak.fill_none(bjet_n, EMPTY_FLOAT))
+    events = set_ak_column(events, "TTbar.bjet_r", ak.fill_none(bjet_r, EMPTY_FLOAT))
+
+    # charge-corrected top/antitop assignment of the (k, n, r) decay-product observables.
+    #
+    # `lepton_k/n/r` and `bjet_k/n/r` are always attached to the *leptonically*/*hadronically*
+    # decaying top, not to "the top quark" vs "the antitop quark" -- which one is which flips
+    # event by event with the lepton charge (a W+ -> l+ nu comes from the top, a W- -> l- nubar
+    # from the antitop; same logic as `lepton_is_negative` used above for `top`/`antitop`).
+    # Since the lepton and the b-jet have different spin-analyzing power, extracting the
+    # top/antitop polarization vectors and the spin correlation matrix from these observables
+    # requires keeping the two charge sub-samples (and thus source particles) separate rather
+    # than combining lepton_k/n/r and bjet_k/n/r into a single "top" observable directly. Each
+    # of the following columns is therefore masked to EMPTY_FLOAT outside the event sub-sample
+    # in which it is meaningful, so that a downstream expectation-value calculation can combine
+    # the (disjoint) sub-samples with the correct spin-analyzing power for each.
+    for component, lep_val, bjet_val in (
+        ("k", lepton_k, bjet_k),
+        ("n", lepton_n, bjet_n),
+        ("r", lepton_r, bjet_r),
+    ):
+        events = set_ak_column(
+            events, f"TTbar.top_lepton_{component}",
+            ak.fill_none(ak.where(lepton_is_negative, EMPTY_FLOAT, lep_val), EMPTY_FLOAT),
+        )
+        events = set_ak_column(
+            events, f"TTbar.top_bjet_{component}",
+            ak.fill_none(ak.where(lepton_is_negative, bjet_val, EMPTY_FLOAT), EMPTY_FLOAT),
+        )
+        events = set_ak_column(
+            events, f"TTbar.atop_lepton_{component}",
+            ak.fill_none(ak.where(lepton_is_negative, lep_val, EMPTY_FLOAT), EMPTY_FLOAT),
+        )
+        events = set_ak_column(
+            events, f"TTbar.atop_bjet_{component}",
+            ak.fill_none(ak.where(lepton_is_negative, EMPTY_FLOAT, bjet_val), EMPTY_FLOAT),
+        )
     events = set_ak_column(events, "TTbar.top_had_energy", ak.fill_none(top_had_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.top_lep_energy", ak.fill_none(top_lep_energy, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.n_jet_had", ak.fill_none(n_jet_had, -1))
