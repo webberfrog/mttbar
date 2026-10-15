@@ -9,7 +9,7 @@ from columnflow.columnar_util import Route
 from columnflow.util import maybe_import
 from columnflow.categorization import Categorizer, categorizer
 
-from mtt.categorization.util import make_categorizer_not, make_categorizer_range
+from mtt.categorization.util import make_categorizer_and, make_categorizer_not, make_categorizer_range
 
 np = maybe_import("numpy")
 ak = maybe_import("awkward")
@@ -50,5 +50,29 @@ sels_acts = tuple(
         max_val=max_val,
     )
     for min_val, max_val, acts_name in zip(acts_bins[:-1], acts_bins[1:], acts_names)
+)
+
+
+# entanglement regions of Fig. 131 of AN2023_120 (see `mtt.config.categories.add_categories_entanglement`);
+# these overlap with each other by design. Reconstruction failures (EMPTY_FLOAT) fall outside every range.
+_sel_ent_mtt_gt800 = make_categorizer_range(
+    "_sel_ent_mtt_gt800", route="TTbar.mass", min_val=800.0, max_val=np.inf, uses={"TTbar.mass"},
+)
+_sel_ent_mtt_gt1000 = make_categorizer_range(
+    "_sel_ent_mtt_gt1000", route="TTbar.mass", min_val=1000.0, max_val=np.inf, uses={"TTbar.mass"},
+)
+_sel_ent_acts_lt0p4 = make_categorizer_range_acts(name="_sel_ent_acts_lt0p4", min_val=0.0, max_val=0.4)
+
+sel_ent_pt_lt50 = make_categorizer_range(
+    "sel_ent_pt_lt50", route="TTbar.top_pt", min_val=0.0, max_val=50.0, uses={"TTbar.top_pt"},
+)
+sel_ent_mtt_lt400 = make_categorizer_range(
+    "sel_ent_mtt_lt400", route="TTbar.mass", min_val=0.0, max_val=400.0, uses={"TTbar.mass"},
+)
+sel_ent_mtt_gt800_acts_lt0p4 = make_categorizer_and(
+    "sel_ent_mtt_gt800_acts_lt0p4", {_sel_ent_mtt_gt800, _sel_ent_acts_lt0p4},
+)
+sel_ent_mtt_gt1000_acts_lt0p4 = make_categorizer_and(
+    "sel_ent_mtt_gt1000_acts_lt0p4", {_sel_ent_mtt_gt1000, _sel_ent_acts_lt0p4},
 )
 

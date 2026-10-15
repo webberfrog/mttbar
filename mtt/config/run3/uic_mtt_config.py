@@ -1045,4 +1045,11 @@ def add_new_config(
     # register custom hist hooks (usable via --hist-hooks <name>)
     cfg.x.hist_hooks = hist_hooks
 
+    # regions (category names) stacked per variable by the `stack_entanglement_regions` hist hook,
+    # for `mtt.plotting.plot_functions.plot_entanglement_summary` (Fig. 131 of AN2023_120)
+    cfg.x.entanglement_regions = {
+        "cos_phi": ["ent_pt_lt50", "ent_mtt_lt400"],
+        "cos_phi_tilde": ["ent_mtt_gt800_acts_lt0p4", "ent_mtt_gt1000_acts_lt0p4"],
+    }
+
     return cfg

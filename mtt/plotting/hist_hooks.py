@@ -272,7 +272,91 @@ def calculate_asymmetry(task, hists, category_name=None, variable_name=None, **k
     return new_hists
 
 
+def _stack_regions(h, config_inst, category_name, regions):
+    """
+    Return a copy of `h` with an additional ``region`` axis (placed right after ``category``)
+    holding, for each category name in `regions`, the raw counts summed over that region
+    category's leaves. All region contents are written into the *first* leaf bin of
+    `category_name` on the ``category`` axis and every other bin is left empty, so that the
+    later leaf selection and summation in ``PlotVariablesBaseSingleShift.run()`` returns them
+    unchanged (cf. `_spread_over_category_leaves`).
+    """
+    cat_axis = h.axes["category"]
+    target_leaves, _ = _combine_category_leaves(h, config_inst, category_name)
+    if not target_leaves:
+        raise ValueError(
+            f"none of the leaf categories of '{category_name}' found on the histogram's category axis",
+        )
+    target_idx = cat_axis.index(target_leaves[0])
+
+    other_axes = [ax for ax in h.axes if ax.name != "category"]
+    h_out = hist.Hist(
+        cat_axis,
+        hist.axis.StrCategory(regions, name="region", growth=True),
+        *other_axes,
+        storage=h.storage_type(),
+    )
+    view_out = h_out.view(flow=True)
+
+    for region_idx, region in enumerate(regions):
+        region_inst = config_inst.get_category(region)
+        leaf_names = [
+            c.name
+            for c in (region_inst.get_leaf_categories() or [region_inst])
+            if c.name in cat_axis
+        ]
+        if not leaf_names:
+            # region not filled (e.g. histograms produced before the region categories existed)
+            raise ValueError(
+                f"entanglement region '{region}' not found on the histogram's category axis; "
+                "were the histograms produced with the region categories present?",
+            )
+        h_region = h[{"category": [hist.loc(name) for name in leaf_names]}][{"category": sum}]
+        # string category axes have no underflow, so flow and non-flow indices coincide
+        view_out[target_idx, region_idx, ...] = h_region.view(flow=True)
+
+    return h_out
+
+
+def stack_entanglement_regions(task, hists, category_name=None, variable_name=None, **kwargs):
+    """
+    Hist hook that adds a ``region`` axis to the histograms of every variable listed in
+    ``config_inst.x.entanglement_regions`` (a mapping of variable name to a list of region
+    category names), so that several -- possibly overlapping -- phase-space regions reach a
+    single plot function call. The plot task would otherwise reduce everything to the leaves of
+    the one plotted category.
+
+    Processes are kept separate (data and MC must stay distinct). Variables without configured
+    regions are returned unchanged.
+
+    Meant to be used together with ``mtt.plotting.plot_functions.plot_entanglement_summary``:
+
+    .. code-block:: bash
+
+        law run cf.PlotVariables1D --version v1 --processes data,tt --categories incl \\
+            --variables cos_phi,cos_phi_tilde --multi-variable \\
+            --hist-hooks stack_entanglement_regions \\
+            --plot-function mtt.plotting.plot_functions.plot_entanglement_summary
+    """
+    if category_name is None:
+        return hists
+
+    new_hists = {}
+    for config_inst, config_hists in hists.items():
+        regions = config_inst.x("entanglement_regions", {}).get(variable_name)
+        if not regions:
+            new_hists[config_inst] = config_hists
+            continue
+        new_hists[config_inst] = {
+            process_inst: _stack_regions(h, config_inst, category_name, regions)
+            for process_inst, h in config_hists.items()
+        }
+
+    return new_hists
+
+
 # registry consumed by `config_inst.x.hist_hooks`
 hist_hooks = {
     "calculate_asymmetry": calculate_asymmetry,
+    "stack_entanglement_regions": stack_entanglement_regions,
 }

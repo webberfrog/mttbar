@@ -32,6 +32,16 @@ maybe_import("coffea.nanoevents.methods.nanoaod")
 logger = law.logger.get_logger(__name__)
 
 
+def _rapidity(lv):
+    """
+    Rapidity y = asinh(p_z / m_T) of a four-vector, with p_z = pT sinh(eta) and
+    m_T = sqrt(m^2 + pT^2). Equivalent to 1/2 ln((E + p_z) / (E - p_z)) with the full energy E,
+    but numerically stable.
+    """
+    m_t = np.sqrt(lv.mass ** 2 + lv.pt ** 2)
+    return np.arcsinh(lv.pt * np.sinh(lv.eta) / m_t)
+
+
 @producer(
     uses={
         choose_lepton, neutrino_candidates, category_ids, #adapt choose lepton to pass this column
@@ -727,16 +737,11 @@ def uic(
 
     top = ak.to_packed(ak.where(lepton_is_negative, top_had, top_lep))
     antitop = ak.to_packed(ak.where(lepton_is_negative, top_lep, top_had))
-    top_energy = ak.where(lepton_is_negative, top_had_energy, top_lep_energy)
-    antitop_energy = ak.where(lepton_is_negative, top_lep_energy, top_had_energy)
 
-    # p along beam direction for rapidity measurment
-    p_zt = lv_mass(top).pt * np.sinh(lv_mass(top).eta)
-    p_ztbar = lv_mass(antitop).pt * np.sinh(lv_mass(antitop).eta)
-
-    # y_t,y_tbar calculation
-    y_t = abs((1/2) * np.log((top_energy + p_zt)/(top_energy - p_zt)))
-    y_tbar = abs((1/2) * np.log((antitop_energy + p_ztbar)/(antitop_energy - p_ztbar)))
+    # |y_t|, |y_tbar| (note: top_*_energy above is the transverse mass m_T, not E, so it must not
+    # be used in 1/2 ln((E + p_z) / (E - p_z)))
+    y_t = abs(_rapidity(lv_mass(top)))
+    y_tbar = abs(_rapidity(lv_mass(antitop)))
     delta_y = y_t - y_tbar
     tanh_y = np.tanh(delta_y)
 
@@ -928,6 +933,15 @@ def uic(
         events = set_ak_column_ef(events, "TTbar.gen_delta_r", dr_gen_ttbar)
         events = set_ak_column_ef(events, "TTbar.gen_cos_theta_star", gen_cos_theta_star)
         events = set_ak_column_ef(events, "TTbar.gen_abs_cos_theta_star", gen_abs_cos_theta_star)
+
+        # -- gen-level charge-asymmetry observable (AN-26-039, Eqs. 17/19); the physical top is
+        # the one with positive pdgId
+        gen_1_is_top = gen_top_1.pdgId > 0
+        gen_top = ak.where(gen_1_is_top, gen_top_1, gen_top_2)
+        gen_antitop = ak.where(gen_1_is_top, gen_top_2, gen_top_1)
+        gen_delta_y = abs(_rapidity(lv_mass(gen_top))) - abs(_rapidity(lv_mass(gen_antitop)))
+        events = set_ak_column_ef(events, "TTbar.gen_delta_y", gen_delta_y)
+        events = set_ak_column_ef(events, "TTbar.gen_tanh_y", np.tanh(gen_delta_y))
 
         events = set_ak_column_ef(events, "GenTTbar.ttbar_mass", gen_ttbar_unmatched.mass)
         events = set_ak_column_ef(events, "GenTTbar.mass_diff", gen_ttbar_unmatched.mass - gen_ttbar_lv.mass)

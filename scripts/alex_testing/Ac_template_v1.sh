@@ -1,21 +1,22 @@
 #!/usr/bin/env bash
 
 #
-# Test migration plot
+# First test of template fit plots (reco, tt_sl, 2024 limited)
 #
 
 # common arguments for all tasks
 args=(
-    --version uic_v3_9
-    --categories incl,0t,1t,chi2pass,
+    --version uic_v4_1
+    --categories incl,1m__0t,1m__1t,1m__chi2pass
     --config run3_mtt_2024_nano_v15_limited_new
     --hist-producer all_weights
-    #--hist-hooks calculate_asymmetry
+    --plot-function mtt.plotting.plot_functions_asymmetry.plot_tanh_y_f_templates
     #--skip-ratio
-    --workers 5
-    --workflow htcondor
+    #--workers 5
+    #--workflow htcondor
     #--local-scheduler False --bugged right now for me
     #--shape-norm
+    #--skip-ratio
     --remove-output 0,a,y
     #--selector-steps Jet,BJet
     #--per-plot steps BUGGED
@@ -25,12 +26,13 @@ args=(
     #--process-settings "tt,unstack,color=#e41a1c:st,unstack,label=Single Top"
 )
 
-# run law
+# lotta jet stuffs
 law run cf.PlotVariables2D \
-    --variables mtt_reco_5bin-mtt_gen_5bin \
-    --plot-function mtt.plotting.plot_functions_2d.plot_2d_migration \
+    --variables \
+        gen_tanh_y-tanh_y_18bin \
     --processes \
         tt_sl \
+    --plot-suffix ftemplates \
     --datasets \
         tt_sl_powheg \
     --producers \

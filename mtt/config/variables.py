@@ -454,8 +454,27 @@ def add_variables(config: od.Config) -> None:
         name="tanh_y",
         expression="TTbar.tanh_y",
         binning=(30,-1.0, 1.0),
-        unit="GeV",
         x_title=rf"tanh($\Delta y$)",
+        y_title="Events",
+    )
+
+    # 18 symmetric bins as in the charge-asymmetry template fit of AN-26-039
+    # (see mtt.plotting.plot_functions_asymmetry)
+    config.add_variable(
+        name="tanh_y_18bin",
+        expression="TTbar.tanh_y",
+        binning=(18, -1.0, 1.0),
+        x_title=rf"tanh($\Delta y$)",
+        y_title="Events",
+    )
+
+    # gen-level counterpart (MC only); use as the 2D variable `gen_tanh_y-tanh_y_18bin` for the
+    # gen-level f reweighting in mtt.plotting.plot_functions_asymmetry
+    config.add_variable(
+        name="gen_tanh_y",
+        expression="TTbar.gen_tanh_y",
+        binning=(18, -1.0, 1.0),
+        x_title=r"tanh($\Delta y$)$^{gen}$",
         y_title="Events",
     )
 

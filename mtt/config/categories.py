@@ -227,9 +227,40 @@ def add_categories_production(config: od.Config) -> None:
 
     create_category_combinations(config, category_groups, name_fn, kwargs_fn=kwargs_fn, parent_mode="all")
 
+    # standalone (overlapping) entanglement regions
+    add_categories_entanglement(config)
+
     # add tag to config to indicate that production categories have been added
     config.x.added_categories_production = True
     logger.debug(f"config.x.added_categories_production: {config.x.added_categories_production}")
+
+
+def add_categories_entanglement(config: od.Config) -> None:
+    """
+    Adds the phase-space regions of the entanglement summary plot (Fig. 131 of AN2023_120) to a
+    *config* as standalone root categories, available after the feature production step.
+
+    Unlike the other categories, these regions overlap (an event can carry several of their
+    IDs), so they are kept outside the ID numbering scheme above and are not combined with other
+    category groups. They are consumed by the ``stack_entanglement_regions`` hist hook (see
+    ``config.x.entanglement_regions``) and ``mtt.plotting.plot_functions.plot_entanglement_summary``.
+    """
+    regions = [
+        ("ent_pt_lt50", r"$p_{T}(t) < 50$ GeV"),
+        ("ent_mtt_lt400", r"$m(t\bar{t}) < 400$ GeV"),
+        ("ent_mtt_gt800_acts_lt0p4", r"$m(t\bar{t}) > 800$ GeV" + "\n" + r"$|\cos(\theta)| < 0.4$"),
+        ("ent_mtt_gt1000_acts_lt0p4", r"$m(t\bar{t}) > 1000$ GeV" + "\n" + r"$|\cos(\theta)| < 0.4$"),
+    ]
+    for i, (name, label) in enumerate(regions, start=1):
+        if config.has_category(name):
+            continue
+        config.add_category(
+            name=name,
+            # outside the 7-digit numbering scheme to avoid clashes with combined categories
+            id=100_000_000 + i,
+            selection=f"sel_{name}",
+            label=label,
+        )
 
 
 def add_categories_ml(config: od.Config, ml_model_inst: MLModel) -> None:
