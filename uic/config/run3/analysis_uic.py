@@ -73,7 +73,7 @@ ana_new.x.hist_hooks = hist_hooks
 #
 
 # from mtt.config.run3.config_mtt import add_config
-from mtt.config.run3.uic_mtt_config import add_new_config
+from uic.config.run3.uic_config import add_new_config
 
 # from cmsdb.campaigns.run3_2022_preEE_nano_v12 import campaign_run3_2022_preEE_nano_v12 as campaign_run3_2022_preEE_nano_v12  # noqa
 # from cmsdb.campaigns.run3_2022_postEE_nano_v12 import campaign_run3_2022_postEE_nano_v12 as campaign_run3_2022_postEE_nano_v12  # noqa

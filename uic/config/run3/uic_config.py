@@ -20,11 +20,11 @@ from columnflow.config_util import (
     get_shifts_from_sources,
     verify_config_processes,
 )
-from mtt.config.categories import add_categories_selection
-from mtt.config.variables import add_variables
-from mtt.plotting.hist_hooks import hist_hooks
+from uic.config.categories import add_categories_selection
+from uic.config.variables import add_variables
+from uic.plotting.hist_hooks import hist_hooks
 
-from mtt.config.datasets_uic import (
+from uic.config.datasets_uic import (
     data_datasets,
     dy_datasets,
     w_lnu_datasets,
@@ -40,8 +40,8 @@ from mtt.config.datasets_uic import (
     # hpseudo_datasets,
     # rsgluon_datasets,
 )
-from mtt.config.taggers import btag_params, toptag_params
-from mtt.config.defaults_and_groups import (
+from uic.config.taggers import btag_params, toptag_params
+from uic.config.defaults_and_groups import (
     set_defaults,
     set_process_groups,
     set_dataset_groups,
@@ -50,7 +50,7 @@ from mtt.config.defaults_and_groups import (
     set_shift_groups,
     set_selector_steps,
 )
-from mtt.config.corrections import (
+from uic.config.corrections import (
     vjets_reweighting_cfg,
     jerc_cfg,
     btag_sf_cfg,
@@ -534,7 +534,7 @@ def add_new_config(
     #
 
     # read in JEC sources from file
-    with open(os.path.join(thisdir, "jec_sources.yaml"), "r") as f:
+    with open(os.path.join("/data/dust/user/athielen/mttbar_2024/mttbar/mtt/config/run3/", "jec_sources.yaml"), "r") as f:
         all_jec_sources = yaml.load(f, yaml.Loader)["names"]
 
     # declare the shifts

@@ -165,6 +165,7 @@ Inspect a task tree: `law run <Task> ... --print-status 3,0`. For the full task 
 - [ ] Asymmetry hist hook `calculate_asymmetry` (`uic/plotting/hist_hooks.py`)
 - [ ] SPANet-based ttbar reconstruction (`uic/production/ttbar_reco_uic_spanet.py`)
 - [ ] Implement muon 2D cut (& verify whole selection)
+- [ ] Determine is gen particles are first or last copy
 - [ ] ...
 
 ### Known issues
