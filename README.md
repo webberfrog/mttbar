@@ -161,17 +161,17 @@ Inspect a task tree: `law run <Task> ... --print-status 3,0`. For the full task 
 <!-- Fill in / tick off as work progresses. -->
 
 ### In progress
-- [ ] QIS variables plot (bugged, see commit `0562b23`)
-- [ ] Asymmetry hist hook `calculate_asymmetry` (`uic/plotting/hist_hooks.py`)
-- [ ] SPANet-based ttbar reconstruction (`uic/production/ttbar_reco_uic_spanet.py`)
-- [ ] Implement muon 2D cut (& verify whole selection)
-- [ ] Determine is gen particles are first or last copy
+- [ ] Alex: QIS variables plot (bugged, see commit `0562b23`)
+- [ ] Alex: Asymmetry hist hook `calculate_asymmetry` (`uic/plotting/hist_hooks.py`)
+- [ ] Alex: SPANet-based ttbar reconstruction (`uic/production/ttbar_reco_uic_spanet.py`) (Follow up over email)
+- [x] Alex: Implement muon 2D cut (& verify whole selection)
+- [x] Alex: Determine is gen particles are first or last copy (They are last copy)
 - [ ] ...
 
 ### Known issues
 - [ ] `--local-scheduler False` doesn't work in the current setup
 - [ ] `--per-plot steps` doesn't work for cutflow plots
-- [ ] `uic_law.cfg` `run3_analysis` points to `uic.config.run3.analysis_mtt`, which doesn't exist in `uic/config/run3/`
+- [x] Alex: `uic_law.cfg` `run3_analysis` points to `uic.config.run3.analysis_mtt`, which doesn't exist in `uic/config/run3/`
 - [ ] ...
 
 ### Next steps
