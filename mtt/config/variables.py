@@ -557,8 +557,8 @@ def add_variables(config: od.Config) -> None:
     # charge-corrected top/antitop-side counterparts of the lepton_{k,n,r}/bjet_{k,n,r} variables
     # above: each is masked (EMPTY_FLOAT, landing in the underflow bin) outside the event
     # sub-sample -- selected by the lepton charge -- in which it is meaningful. See
-    # `mtt.production.ttbar_reco_uic.uic` for the exact definitions. Used by
-    # `mtt.plotting.plot_functions.plot_spin_density_matrix` to extract the top/antitop
+    # `uic.production.ttbar_reco_uic.uic` for the exact definitions. Used by
+    # `uic.plotting.plot_functions.plot_spin_density_matrix` to extract the top/antitop
     # polarization vectors and the spin correlation matrix from expectation values.
     for role, role_label in (("top", "t"), ("atop", r"\bar{t}")):
         for obj, obj_label in (("lepton", r"\ell"), ("bjet", "b")):
