@@ -21,6 +21,9 @@ from uic.production.reco_jets import reco_jets, RECO_JETS_USES
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
 
+# The AK4 jet radius
+MAX_DR_ORIGIN = 0.4
+
 
 @producer(
     uses=RECO_JETS_USES | {
@@ -95,6 +98,62 @@ def _dr_min_bl(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
+    uses=RECO_JETS_USES | {
+        "TTbar.jet_idxs_lep",  # indices of the jets the chi2 assignment puts on the leptonic top
+        "TTbar.n_jet_lep",  # number of jets on the leptonic side (1 or 2)
+        "GenPart.{pt,eta,phi,mass}",  # gen particles, indexed by the GenTTbar columns
+        "GenTTbar.{b_1,b_2,q_1,q_2,is_semileptonic}",  # true decay products, from `ttbar_gen` (run by `uic`)
+    },
+    produces={"TopWidth.lep_jet_origin"},
+)
+def _lep_jet_origin(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Which gen quark the jet paired with the lepton (the jet used for `TopWidth.mlb`) comes from.
+    The jet is matched to the closest of the four quarks of the semileptonic decay, within
+    `MAX_DR_ORIGIN`. MC only.
+
+    Values: 0 = b of the leptonic top (correct assignment), 1 = b of the hadronic top,
+    2 = quark from the hadronic W, 3 = none of the four quarks nearby,
+    -1 = undefined (`TopWidth.mlb` not filled, not semileptonic at gen level, or a gen b not found).
+    """
+    gen = lv_mass(events.GenPart)
+    gen_ttbar = events.GenTTbar
+
+    # the top with two W-daughter quarks is the hadronic one
+    top1_is_had = ak.num(gen_ttbar.q_1, axis=1) == 2
+    idx_b1, idx_b2 = ak.firsts(gen_ttbar.b_1), ak.firsts(gen_ttbar.b_2)
+    b_had = ak.firsts(gen[ak.singletons(ak.where(top1_is_had, idx_b1, idx_b2))])
+    b_lep = ak.firsts(gen[ak.singletons(ak.where(top1_is_had, idx_b2, idx_b1))])
+    q_had = gen[ak.where(top1_is_had, gen_ttbar.q_1, gen_ttbar.q_2)]
+
+    jet = lv_mass(reco_jets(events, self.config_inst.x.ttbar_reco_settings))
+    lep_jet = ak.firsts(jet[events.TTbar.jet_idxs_lep])
+
+    # distance to each gen candidate; missing ones can never be the closest match
+    no_match = 999.0
+    delta_r = np.stack([
+        ak.to_numpy(ak.fill_none(dr, no_match))
+        for dr in (
+            lep_jet.delta_r(b_lep),
+            lep_jet.delta_r(b_had),
+            ak.min(q_had.delta_r(lep_jet), axis=1),
+        )
+    ])
+    origin = delta_r.argmin(axis=0)
+    origin[delta_r.min(axis=0) >= MAX_DR_ORIGIN] = 3
+
+    valid = (
+        ak.to_numpy(ak.fill_none(events.TTbar.n_jet_lep == 1, False)) &
+        ak.to_numpy(ak.fill_none(gen_ttbar.is_semileptonic, False)) &
+        ~ak.to_numpy(ak.is_none(b_lep)) &
+        ~ak.to_numpy(ak.is_none(b_had))
+    )
+
+    events = set_ak_column(events, "TopWidth.lep_jet_origin", np.where(valid, origin, -1).astype(np.int8))
+    return events
+
+
+@producer(
     uses={_m_lb, _dr_min_bl},
     produces={_m_lb, _dr_min_bl},
 )
@@ -105,4 +164,14 @@ def top_width_observables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
     """
     events = self[_m_lb](events, **kwargs)
     events = self[_dr_min_bl](events, **kwargs)
+    if self.dataset_inst.is_mc:
+        events = self[_lep_jet_origin](events, **kwargs)
     return events
+
+
+@top_width_observables.init
+def top_width_observables_init(self: Producer) -> None:
+    # the jet origin needs gen information, so only add it for MC (same pattern as `uic` with `ttbar_gen`)
+    if hasattr(self, "dataset_inst") and self.dataset_inst.is_mc:
+        self.uses |= {_lep_jet_origin}
+        self.produces |= {_lep_jet_origin}

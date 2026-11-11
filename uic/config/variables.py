@@ -665,6 +665,16 @@ def add_variables(config: od.Config) -> None:
         binning=(28, 0.4, 3.2),
         x_title=r"$\Delta R_{min}(j_{b}, j_{l})$",
     )
+    # MC only; assignment purity of the jet used for mlb, values documented in the producer
+    # (the 1D plots do not show bin labels, so the axis title carries them; -1 = undefined, underflow)
+    config.add_variable(
+        name="lep_jet_origin",
+        expression="TopWidth.lep_jet_origin",
+        # x_discrete builds an integer axis from int(first edge) to int(last edge), last one excluded
+        binning=(4, 0, 4),
+        x_discrete=True,
+        x_title="Leptonic Jet origin: 0 b(lep), 1 b(had), 2 W, 3 none",
+    )
 
 
 def add_variables_ml(config: od.Config) -> None:
