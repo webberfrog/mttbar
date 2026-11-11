@@ -654,7 +654,7 @@ def add_variables(config: od.Config) -> None:
         name="mlb",
         expression="TopWidth.mlb",
         null_value=EMPTY_FLOAT,
-        binning=(30, 30., 180.),
+        binning=(40, 0., 200.),
         unit="GeV",
         x_title=r"$m_{\ell b}$",
     )

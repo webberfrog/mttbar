@@ -28,7 +28,7 @@ Everything works under `uic_law.cfg` only; `law.cfg` does not load these modules
 | [uic/production/ttbar_reco_uic.py](uic/production/ttbar_reco_uic.py) | Jet selection now calls `reco_jets()`. |
 | [uic/production/default.py](uic/production/default.py) | Imports `uic` from `uic/` instead of `mtt/`; runs `top_width_observables` after `uic`. |
 | [uic/config/run3/uic_config.py](uic/config/run3/uic_config.py) | New setting `ttbar_reco_settings.jet_topjet_min_dr = 1.2`. |
-| [uic/config/variables.py](uic/config/variables.py) | New variables `mlb` (30 bins, 30–180 GeV) and `dr_min_bl` (28 bins, 0.4–3.2). |
+| [uic/config/variables.py](uic/config/variables.py) | New variables `mlb` (40 bins, 0–200 GeV) and `dr_min_bl` (28 bins, 0.4–3.2). |
 
 Definitions, with `EMPTY_FLOAT` where undefined:
 
@@ -72,9 +72,7 @@ Numbers from the `ProduceColumns` output (63,097 events, unweighted):
    This is indirect evidence: the purity has not been measured against gen.
 2. **`dr_min_bl` loses 38 % of events**, mostly events with no b-tagged jet on the hadronic side. This is
    probably the same assignment problem.
-3. **The `mlb` range is too narrow for a fit.** The width effect is largest in the tails (ATLAS Fig. 4a),
-   and the current range drops 6 % of events. Proposed: 40 bins, 0–200 GeV.
-4. **Gen-level precision is unchecked.** The reweighting needs `GenPart.mass` of the tops to be resolved
+3. **Gen-level precision is unchecked.** The reweighting needs `GenPart.mass` of the tops to be resolved
    well below 1 GeV in NanoAOD. The sample's true m_t and Γ₀ must also be read from the generator settings.
 
 ## Next steps
@@ -83,11 +81,10 @@ Numbers from the `ProduceColumns` output (63,097 events, unweighted):
 2. Depending on that result, either require `TopWidth.lep_jet_is_b` in a category (costs about half the
    events), or add b-tagging to the assignment as a separate option. The latter must not change the
    default combinatorics, because Alex's observables depend on it.
-3. Widen the `mlb` binning.
-4. Write the width-weight producer: one Breit–Wigner reweighting column per Γt, normalised before selection.
-5. Add the categories: e/μ × 1b/≥2b (`1b`/`2b` are commented out in `uic/config/categories.py`) × jet |η|.
-6. Fit: first a standalone Python fit on the histograms, later combine with profiled systematics.
-7. Validate with reweighting closure, pull and linearity toys, and an alternative-width sample if one exists.
+3. Write the width-weight producer: one Breit–Wigner reweighting column per Γt, normalised before selection.
+4. Add the categories: e/μ × 1b/≥2b (`1b`/`2b` are commented out in `uic/config/categories.py`) × jet |η|.
+5. Fit: first a standalone Python fit on the histograms, later combine with profiled systematics.
+6. Validate with reweighting closure, pull and linearity toys, and an alternative-width sample if one exists.
 
 Physics caveats from the paper: Γt is degenerate with m_t (a 0.5 GeV shift in m_t moves Γt by up to about
 0.2 GeV), and off-shell and tt̄/Wt interference effects are not modelled (ATLAS cross-checked with
