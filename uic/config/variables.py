@@ -665,6 +665,28 @@ def add_variables(config: od.Config) -> None:
         binning=(28, 0.4, 3.2),
         x_title=r"$\Delta R_{min}(j_{b}, j_{l})$",
     )
+    # Same as previous, but all events that have a non b-tagged jet assigned to the leptonic
+    # b-jet are thrown out
+    config.add_variable(
+        name="mlb_btagged",
+        expression="TopWidth.mlb",
+        aux={"inputs": {"TopWidth.lep_jet_is_b"}},
+        selection=lambda events: events.TopWidth.lep_jet_is_b,
+        null_value=EMPTY_FLOAT,
+        binning=(40, 0., 200.),
+        unit="GeV",
+        x_title=r"$m_{\ell b}$ (b-tagger cut)",
+    )
+    config.add_variable(
+        name="dr_min_bl_btagged",
+        expression="TopWidth.dr_min_bl",
+        aux={"inputs": {"TopWidth.lep_jet_is_b"}},
+        selection=lambda events: events.TopWidth.lep_jet_is_b,
+        null_value=EMPTY_FLOAT,
+        binning=(28, 0.4, 3.2),
+        x_title=r"$\Delta R_{min}(j_{b}, j_{l})$ (b-tagger cut)",
+    )
+
     # MC only; assignment purity of the jet used for mlb, values documented in the producer
     # (the 1D plots do not show bin labels, so the axis title carries them; -1 = undefined, underflow)
     config.add_variable(
@@ -674,6 +696,17 @@ def add_variables(config: od.Config) -> None:
         binning=(4, 0, 4),
         x_discrete=True,
         x_title="Leptonic Jet origin: 0 b(lep), 1 b(had), 2 W, 3 none",
+    )
+    # same, keeping only events where the jet paired with the lepton is b-tagged; the selection is
+    # applied per variable in cf.CreateHistograms, and "inputs" makes it read the column
+    config.add_variable(
+        name="lep_jet_origin_btagged",
+        expression="TopWidth.lep_jet_origin",
+        selection=lambda events: events.TopWidth.lep_jet_is_b,
+        aux={"inputs": {"TopWidth.lep_jet_is_b"}},
+        binning=(4, 0, 4),
+        x_discrete=True,
+        x_title="Tagged jet origin: 0 b(lep), 1 b(had), 2 W, 3 none",
     )
 
 
