@@ -479,6 +479,9 @@ def add_new_config(
         "n_jet_lep_range": (1, 2),
         "n_jet_had_range": (1, 6),
         "n_jet_ttbar_range": (2, 6),
+        # AK4 jets within this DeltaR of a top-tagged AK8 jet are dropped (AK8 + AK4 radius);
+        # also used by uic.production.top_width_observables to rebuild the same jet list
+        "jet_topjet_min_dr": 1.2,
         "max_chunk_size": (
             lambda dataset_inst:
                 10000 if dataset_inst.has_tag("has_memory_intensive_reco")

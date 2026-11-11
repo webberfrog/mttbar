@@ -23,6 +23,7 @@ from mtt.production.lepton import choose_lepton
 from mtt.production.neutrino import neutrino_candidates
 from mtt.production.ttbar_gen import ttbar_gen
 from mtt.profiling_tools import Profiler
+from uic.production.reco_jets import reco_jets
 
 ak = maybe_import("awkward")
 np = maybe_import("numpy")
@@ -85,6 +86,11 @@ def uic(
       - *n_jet_had_range*: minimum and maximum number of jets that can be assigned to the hadronic top decay
       - *n_jet_ttbar_range*: minimum and maximum number of jets that can be assigned to the ttbar decay overall
         (if *None* or omitted, will be inferred from *n_jet_lep_range* and *n_jet_had_range*)
+      - *jet_topjet_min_dr*: AK4 jets closer than this to a top-tagged AK8 jet are not used (default 1.2,
+        i.e. AK8 radius + AK4 radius); config only, read by `uic.production.reco_jets.reco_jets`
+
+    The jet list is built by `uic.production.reco_jets.reco_jets`; the stored `TTbar.jet_idxs_{lep,had}`
+    are positions in that list (see that module).
 
     The parameter values can be provided as keyword arguments or via a configuration entry:
 
@@ -173,13 +179,9 @@ def uic(
     # tag events as boosted if there is at least one AK8 jet
     is_boosted = ak.fill_none(ak.num(topjet, axis=1) >= 1, False)
 
-    # -- AK4 jets: only keep the first `n_jet_max` jets per event
-    jet = events.Jet[ak.local_index(events.Jet) < n_jet_max]
-
-    # well separated from AK8 jets (deltaR >= 1.2)
-    delta_r_jet_topjet = ak.min(jet.metric_table(topjet), axis=2)
-    jet_isolated = ak.fill_none(delta_r_jet_topjet > 1.2, True)
-    jet = jet[jet_isolated]
+    # -- AK4 jets: the first `n_jet_max` jets, well separated from the top-tagged AK8 jets;
+    # the jet indices stored below are positions in this list (see uic.production.reco_jets)
+    jet = reco_jets(events, settings)
 
     # per-jet b-tag flag, obtained by geometric matching against the (separately
     # b-tag-selected) `BJet` collection. Every b-tagged jet is by construction also

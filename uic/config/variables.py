@@ -648,6 +648,24 @@ def add_variables(config: od.Config) -> None:
         x_title=r"jet 1 $p_{T}$",
     )
 
+    # top-width observables (uic.production.top_width_observables), ranges roughly as in
+    # ATLAS arXiv:1709.04207; EMPTY_FLOAT where undefined (see the producer docstrings)
+    config.add_variable(
+        name="mlb",
+        expression="TopWidth.mlb",
+        null_value=EMPTY_FLOAT,
+        binning=(30, 30., 180.),
+        unit="GeV",
+        x_title=r"$m_{\ell b}$",
+    )
+    config.add_variable(
+        name="dr_min_bl",
+        expression="TopWidth.dr_min_bl",
+        null_value=EMPTY_FLOAT,
+        binning=(28, 0.4, 3.2),
+        x_title=r"$\Delta R_{min}(j_{b}, j_{l})$",
+    )
+
 
 def add_variables_ml(config: od.Config) -> None:
     """

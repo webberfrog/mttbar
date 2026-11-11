@@ -187,19 +187,26 @@ all. Under `uic_law.cfg`, this is what resolves (tested by loading the modules u
 |---|---|---|
 | Analysis object | `mtt.config.run3.analysis_mtt_uic` | `uic.config.run3.analysis_mtt_uic` |
 | Config builder (imported by the analysis) | `mtt.config.run3.uic_mtt_config` | **`mtt`** on `lauti`; `uic.config.run3.uic_config` on `master` |
-| Producers `uic`, `add_prod_cats`, `ttbar` | `mtt.production.*` | **`mtt.production.*`** |
+| Producers `uic`, `add_prod_cats` | `mtt.production.*` | `uic.production.ttbar_reco_uic` on `top_width` (2026-11-11); **`mtt`** before |
+| Producer `ttbar` | `mtt.production.*` | **`mtt.production.*`** |
+| Producer `top_width_observables` | (not loaded) | `uic.production.top_width_observables` (`top_width` only) |
 | Producers `default`, `features` by name | `mtt.production.*` | `uic.production.*` |
 | Selector `default` | `mtt.selection.default` | `uic.selection.default` |
 
 Consequences:
 
-- On `lauti`, no `.py` file in `uic/` or `mtt/` imports `uic.*`, and all 63 `uic/` files are
+- On `lauti` (not `top_width`, see next point), no `.py` file in `uic/` or `mtt/` imports `uic.*`, and all 63 `uic/` files are
   byte-identical to their `mtt/` counterparts. `uic/config/` and `uic/plotting/` are therefore
   unused (a `--plot-function uic.plotting...` given explicitly would be the exception).
-- **`uic/production/ttbar_reco_uic.py` is imported by nothing, on `lauti` and on `master`.**
-  `uic/production/default.py` does `from mtt.production.ttbar_reco_uic import uic`, and `uic_law.cfg`
-  lists `uic.production.ttbar_reco`, which does not exist. To change the producer today, edit the
-  `mtt/` file, or repoint these imports first.
+- **`uic/production/ttbar_reco_uic.py` is imported by nothing on `lauti` and `master`**:
+  there `uic/production/default.py` does `from mtt.production.ttbar_reco_uic import uic`.
+  **On `top_width` (2026-11-11) that import points to `uic.production.ttbar_reco_uic`**, which is
+  then the only producer named `uic` loaded under `uic_law.cfg` (checked by loading the modules).
+  The two copies now differ: the `uic/` one builds its jet list with `uic.production.reco_jets.reco_jets`
+  (shared with `uic.production.top_width_observables`; `TTbar.jet_idxs_*` are positions in that list,
+  so resolve them only through that function), with the AK8 separation from
+  `ttbar_reco_settings.jet_topjet_min_dr`; the `mtt/` one still selects inline with a hardcoded 1.2.
+  `uic_law.cfg` still lists `uic.production.ttbar_reco`, which does not exist.
 - `uic.production.default` and `uic.selection.default` also import their parts from `mtt.*` by
   object. So `--producer default` runs `mtt`'s `features`, while `--producers features` resolves by
   name to `uic`'s. The two only stay the same while the files are identical.
@@ -308,6 +315,10 @@ Carried over from `tt_semileptonic_2`; they apply to any columnflow code here.
   for changes to an existing file (Read it first), Write for new files or full rewrites. If an
   edit is large or repetitive (many files), still use Edit/Write per file and say what changes.
   Bash is for reading, searching and running commands, not for writing file contents.
+- **Edit `uic/`, not `mtt/`** (Lautaro's rule). When a change could go in either, put it in `uic/`.
+  Ask Lautaro before changing anything in `mtt/`, even when the running code is the `mtt/` copy:
+  propose the `uic/` route first (e.g. repoint an import in `uic/` to the `uic/` copy), see the
+  "Which code actually runs" section above.
 - Reference code as `path:line`. Match the surrounding style; Alex's files use `#Alex add`
   comments and uneven blank lines, so do not "fix" style in unrelated hunks while merging.
 - Anything in calibration/selection needs a fresh `--version` and a rerun from
