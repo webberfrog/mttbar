@@ -10,7 +10,6 @@ from columnflow.util import maybe_import
 
 from mtt.production.features import features
 from mtt.production.weights import weights
-from mtt.production.ttbar_reco import ttbar
 from uic.production.ttbar_reco_uic import uic
 from uic.production.top_width_observables import top_width_observables
 
@@ -19,16 +18,18 @@ ak = maybe_import("awkward")
 
 @producer(
     uses={
-        features, category_ids, weights, ttbar, uic, top_width_observables,
+        features, category_ids, weights, uic, top_width_observables,
     },
     produces={
-        features, category_ids, weights, ttbar, uic, top_width_observables,
+        features, category_ids, weights, uic, top_width_observables,
     },
 )
 def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
-    # ttbar reconstruction
-    events = self[ttbar](events, **kwargs)
+    # ttbar reconstruction + uic entanglement and asymmetry, in a single pass: `uic` contains the same
+    # chi2 combinatorics as the `ttbar` producer and writes a superset of its TTbar.* columns, so running
+    # both only repeated the (expensive) combinatorics. It runs first so that `category_ids` sees TTbar.*
+    events = self[uic](events, **kwargs)
 
     # features
     events = self[features](events, **kwargs)
@@ -38,9 +39,6 @@ def default(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
     # category ids
     events = self[category_ids](events, **kwargs)
-
-    # uic entanglement and asymmetry
-    events = self[uic](events, **kwargs)
 
     # top-width observables (m_lb, DeltaR_min); need the TTbar.* columns of `uic`
     events = self[top_width_observables](events, **kwargs)
