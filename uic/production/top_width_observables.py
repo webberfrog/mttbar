@@ -154,6 +154,26 @@ def _lep_jet_origin(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
 
 
 @producer(
+    uses={"GenPart.{pdgId,statusFlags,mass}"},
+    produces={"TopWidth.gen_mt", "TopWidth.gen_mtbar"},
+)
+def _gen_top_masses(self: Producer, events: ak.Array, **kwargs) -> ak.Array:
+    """
+    Gen-level mass of the top and the antitop, taken from their last copy (the one that decays).
+    This is the Breit-Wigner distributed mass the generator sampled, so it is what the width
+    reweighting needs: w(Gamma) = BW(m_t; Gamma) BW(m_tbar; Gamma) / (BW(m_t; Gamma0) BW(m_tbar; Gamma0)).
+    MC only. EMPTY_FLOAT where no such particle is found.
+    """
+    gen = events.GenPart
+    is_last_copy = ((gen.statusFlags >> 13) & 1) == 1  # statusFlags bit 13: isLastCopy
+
+    for name, pdg_id in (("gen_mt", 6), ("gen_mtbar", -6)):
+        mass = ak.firsts(gen.mass[is_last_copy & (gen.pdgId == pdg_id)])
+        events = set_ak_column(events, f"TopWidth.{name}", ak.fill_none(mass, EMPTY_FLOAT), value_type=np.float32)
+    return events
+
+
+@producer(
     uses={_m_lb, _dr_min_bl},
     produces={_m_lb, _dr_min_bl},
 )
@@ -166,6 +186,7 @@ def top_width_observables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
     events = self[_dr_min_bl](events, **kwargs)
     if self.dataset_inst.is_mc:
         events = self[_lep_jet_origin](events, **kwargs)
+        events = self[_gen_top_masses](events, **kwargs)
     return events
 
 
@@ -173,5 +194,5 @@ def top_width_observables(self: Producer, events: ak.Array, **kwargs) -> ak.Arra
 def top_width_observables_init(self: Producer) -> None:
     # the jet origin needs gen information, so only add it for MC (same pattern as `uic` with `ttbar_gen`)
     if hasattr(self, "dataset_inst") and self.dataset_inst.is_mc:
-        self.uses |= {_lep_jet_origin}
-        self.produces |= {_lep_jet_origin}
+        self.uses |= {_lep_jet_origin, _gen_top_masses}
+        self.produces |= {_lep_jet_origin, _gen_top_masses}

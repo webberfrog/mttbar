@@ -482,6 +482,11 @@ def add_new_config(
         # AK4 jets within this DeltaR of a top-tagged AK8 jet are dropped (AK8 + AK4 radius);
         # also used by uic.production.top_width_observables to rebuild the same jet list
         "jet_topjet_min_dr": 1.2,
+        # top mass and width (GeV) the tt sample was generated with, for the Breit-Wigner reweighting in
+        # uic.plotting.plot_functions_width. Taken from the ATLAS nominal sample (EPJC 78 (2018) 129: m_t = 172.5 GeV,
+        # NLO width 1.33 GeV), not yet checked against this sample: fit TopWidth.gen_mt (see TOP_WIDTH_PROGRESS.md)
+        "gen_top_mass": 172.5,
+        "gen_top_width": 1.33,
         "max_chunk_size": (
             lambda dataset_inst:
                 10000 if dataset_inst.has_tag("has_memory_intensive_reco")

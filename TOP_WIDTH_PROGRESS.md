@@ -64,6 +64,30 @@ Numbers from the `ProduceColumns` output (63,097 events, unweighted):
 | Leptonic jet b-tagged | 50.8 % |
 | `dr_min_bl` defined | 62.1 % |
 
+## Width templates (code written 2026-11-12, not yet run on real events)
+
+Templates are built from one histogram, like the A_C templates: the two gen top masses are histogram axes
+next to the reco observable, every gen-mass bin is scaled by the Breit-Wigner ratio, and the gen axes are summed
+over. This is needed because `cf.CreateHistograms` fills one weight per variable, so K width weights are not native.
+
+| File | Change |
+|---|---|
+| [uic/production/top_width_observables.py](uic/production/top_width_observables.py) | New MC-only `_gen_top_masses`: `TopWidth.gen_mt`, `TopWidth.gen_mtbar` (last-copy top / antitop mass, `EMPTY_FLOAT` if not found). |
+| [uic/config/variables.py](uic/config/variables.py) | New variables `gen_mt`, `gen_mtbar` (90 bins, 150-195 GeV). Use as `gen_mt-gen_mtbar-mlb_btagged` or `gen_mt-gen_mtbar-dr_min_bl_btagged`. |
+| [uic/config/run3/uic_config.py](uic/config/run3/uic_config.py) | `ttbar_reco_settings.gen_top_mass = 172.5`, `gen_top_width = 1.33`: the ATLAS nominal values (m_t, NLO width), **not yet checked against this sample**; to be fitted to `TopWidth.gen_mt`. |
+| [uic/plotting/plot_functions_width.py](uic/plotting/plot_functions_width.py) | `plot_width_templates`: overlay of the templates for several Gamma with a ratio to the nominal one. One function for both observables (the reco axis is read from the histogram). |
+| [scripts/top_width/mlb_templates.sh](scripts/top_width/mlb_templates.sh) | The two commands to run (the user runs them). |
+
+Checked: the gen top mass in the reduced files is resolved to 1e-4 GeV (23k distinct values for 34.5k tops), so
+NanoAOD precision is not a problem. A toy test of the reweighting (non-relativistic BW, 2M events): the Gamma_0
+template reproduces the nominal histogram exactly, and the Gamma = 0.7 and 3.0 GeV templates agree with per-event
+weights to within the statistical noise (< 0.7 % in bins with > 2000 events). Law resolves the 3-variable
+`cf.PlotVariables2D` call (`--print-status`); the plot itself has not run.
+
+Known limitations: events with a gen mass outside 150-195 GeV (about 3.7 % in the toy, for Gamma_0 = 1.31) or without
+a gen top keep weight 1, which is wrong in the Breit-Wigner tails for large Gamma (the legend quotes the fraction);
+the yield is not renormalised before selection (the signal normalisation floats in the fit anyway).
+
 ## Open issues
 
 1. **Assignment purity (most important).** Only 50.8 % of the jets paired with the lepton are b-tagged,
@@ -72,8 +96,9 @@ Numbers from the `ProduceColumns` output (63,097 events, unweighted):
    This is indirect evidence: the purity has not been measured against gen.
 2. **`dr_min_bl` loses 38 % of events**, mostly events with no b-tagged jet on the hadronic side. This is
    probably the same assignment problem.
-3. **Gen-level precision is unchecked.** The reweighting needs `GenPart.mass` of the tops to be resolved
-   well below 1 GeV in NanoAOD. The sample's true m_t and Γ₀ must also be read from the generator settings.
+3. **Sample m_t and Γ₀ are copied from ATLAS (172.5 GeV, 1.33 GeV), not measured on this sample.** The mass
+   precision is fine (see above), but the values in `ttbar_reco_settings` should be confirmed by fitting a
+   Breit-Wigner (relativistic or not) to `TopWidth.gen_mt`.
 
 ## Next steps
 

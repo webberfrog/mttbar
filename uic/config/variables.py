@@ -687,6 +687,20 @@ def add_variables(config: od.Config) -> None:
         x_title=r"$\Delta R_{min}(j_{b}, j_{l})$ (b-tagger cut)",
     )
 
+    # gen top and antitop masses (MC only), for the width templates: use as the multi-variable
+    # `gen_mt-gen_mtbar-mlb_btagged`; uic.plotting.plot_functions_width reweights per gen bin with
+    # Breit-Wigner ratios. The names start with `gen_`, which that module uses to find the gen axes.
+    # EMPTY_FLOAT (no gen top found) lands in the underflow bin and keeps weight 1.
+    for name, label in (("gen_mt", r"m_{t}"), ("gen_mtbar", r"m_{\bar{t}}")):
+        config.add_variable(
+            name=name,
+            expression=f"TopWidth.{name}",
+            null_value=EMPTY_FLOAT,
+            binning=(90, 150., 195.),
+            unit="GeV",
+            x_title=rf"${label}^{{gen}}$",
+        )
+
     # MC only; assignment purity of the jet used for mlb, values documented in the producer
     # (the 1D plots do not show bin labels, so the axis title carries them; -1 = undefined, underflow)
     config.add_variable(
