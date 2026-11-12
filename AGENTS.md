@@ -267,6 +267,20 @@ why `--producers ...,uic,...` works although `law.cfg` does not list that module
    on a data event), 2025 support. Details in `../tt_semileptonic_2/MTTBAR_UPDATES.md`.
 7. Reported in `master`'s README, not checked here: `--local-scheduler False` does not work in the
    current setup; `--per-plot steps` does not work for cutflow plots.
+8. **`inf` / `NaN` in the helicity-basis columns** (found 2026-11-12, **not diagnosed, not fixed**).
+   In the `cf.ProduceColumns` output of the `uic` producer, the `n` and `r` components and the angles
+   built from them hold many non-finite values: `TTbar.{lepton,bjet}_{n,r}`, `TTbar.{top,atop}_{lepton,bjet}_{n,r}`,
+   `TTbar.cos_phi`, `TTbar.cos_phi_tilde`. In `tt_sl_powheg` (limited config, 63097 events) `TTbar.lepton_n` has
+   14992 `inf` and 39842 `NaN` (24% / 63%) and `TTbar.cos_phi` has 38596 `NaN` (61%); `data_mu_e` (724 events)
+   is similar. The `k` components are fine. It is the same in the old and the fused chain, so it is not
+   related to running the combinatorics once. A numpy `RuntimeWarning: divide by zero encountered in divide`
+   is printed once per `ProduceColumns` job, right after "merge resolved and boosted reconstructions".
+   First suspect: `(sign / sin_theta)` in `lv_nrk` (`uic/production/util.py:213-214`), but why `sin_theta`
+   would be 0 in 25-60% of events (|cos theta| = 1 is not physical) is unknown; a wrong beam vector or
+   boost upstream is more likely. Any mean over these columns (spin density matrix, D, polarisation) is
+   contaminated unless the `inf`/`NaN` events are masked; whether the plot functions mask them is unchecked.
+   To investigate: read-only script on the `tt_sl_powheg` `ProduceColumns` output, looking at `cos_theta`
+   and the intermediate vectors in the affected events.
 
 ---
 
