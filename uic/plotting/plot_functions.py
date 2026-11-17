@@ -92,6 +92,15 @@ def _mean_and_var(mom: tuple[float, float, float, float, float]) -> tuple[float,
     return mean, variance
 
 
+def legend_kwargs(style_config: dict | None, **defaults) -> dict:
+    """
+    Merge *defaults* with ``style_config["legend_cfg"]`` (the latter taking precedence) for direct
+    ``ax.legend`` calls, dropping columnflow-only ``cf_*`` keys that matplotlib does not accept.
+    """
+    cfg = (style_config or {}).get("legend_cfg", {})
+    return {k: v for k, v in {**defaults, **cfg}.items() if not k.startswith("cf_")}
+
+
 def _cms_label(ax, config_inst, cms_label: str) -> None:
     """
     Draw the CMS label and luminosity/energy on `ax`, unless `cms_label` is "skip".
@@ -273,7 +282,7 @@ def plot_spin_density_matrix(
         ax.set(**style_config["ax_cfg"])
 
     if not skip_legend:
-        ax.legend(loc="upper right", fontsize=14)
+        ax.legend(**legend_kwargs(style_config, loc="upper right", fontsize=14))
 
     ax.annotate(
         category_inst.label,
@@ -470,7 +479,10 @@ def plot_entanglement_summary(
                 ax.errorbar([], [], yerr=[], fmt="o", color="black", markersize=6, capsize=3),
                 (mpatches.Patch(color="salmon", alpha=0.5), plt.Line2D([], [], color="red")),
             ]
-            ax.legend(handles, [data_label, mc_label], loc="upper right", fontsize=14)
+            ax.legend(
+                handles, [data_label, mc_label],
+                **legend_kwargs(style_config, loc="upper right", fontsize=14),
+            )
 
         ax.annotate(
             category_inst.label,

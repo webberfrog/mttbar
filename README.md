@@ -176,8 +176,8 @@ Inspect a task tree: `law run <Task> ... --print-status 3,0`. For the full task 
 
 ### Next steps
 - [ ] Implement data/mc eras other than 2024
-- [ ] Implement electron data
-- [ ] Determine kinematics needed for EFT search
+- [x] Implement electron data
+- [x] Determine kinematics needed for EFT search
 - [ ] Sketch EFT optimization project
 - [ ] ...
 

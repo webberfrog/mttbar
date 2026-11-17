@@ -765,11 +765,11 @@ def uic(
     # rest frame), then take their direction of flight there
     lepton_ttrest = lv_mass(lepton).boost(-ttbar.boostvec)
     lepton_topframe = lepton_ttrest.boost(-top_lep_ttrest.boostvec)
-    lepton_dir = lepton_topframe.pvec.unit
+    lepton_dir = lepton_topframe.pvec / lepton_topframe.pvec.p
 
     hadronic_b_ttrest = hadronic_b.boost(-ttbar.boostvec)
     hadronic_b_topframe = hadronic_b_ttrest.boost(-top_had_ttrest.boostvec)
-    hadronic_b_dir = hadronic_b_topframe.pvec.unit
+    hadronic_b_dir = hadronic_b_topframe.pvec / hadronic_b_topframe.pvec.p
 
     # project both directions onto the shared (k, n, r) basis
     lepton_k = lepton_dir.dot(nrk["k"])

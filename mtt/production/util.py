@@ -199,8 +199,8 @@ def lv_nrk(top_ttrest, beam_ttrest):
     project the direction of any decay product, itself boosted into the rest
     frame of its own parent (top or antitop), onto the (k, n, r) axes.
     """
-    k_hat = top_ttrest.pvec.unit
-    p_hat = beam_ttrest.pvec.unit
+    k_hat = top_ttrest.pvec / top_ttrest.pvec.p
+    p_hat = beam_ttrest.pvec / beam_ttrest.pvec.p
 
     cos_theta = k_hat.dot(p_hat)
     # guard against floating-point roundoff pushing |cos_theta| a hair past 1

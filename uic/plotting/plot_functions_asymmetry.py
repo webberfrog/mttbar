@@ -43,6 +43,8 @@ from columnflow.util import maybe_import
 from columnflow.hist_util import sum_hists
 from columnflow.plotting.plot_util import remove_residual_axis, prepare_style_config
 
+from uic.plotting.plot_functions import legend_kwargs
+
 np = maybe_import("numpy")
 
 
@@ -518,7 +520,7 @@ def plot_tanh_y_decomposition(
 
     if not skip_legend:
         for ax in axs[:2]:
-            ax.legend(loc="lower right", fontsize=14)
+            ax.legend(**legend_kwargs(style_config, loc="lower right", fontsize=14))
 
     fig.tight_layout()
     return fig, tuple(axs)
@@ -681,10 +683,10 @@ def plot_tanh_y_gen_weights(
     ax.set_xlim(edges[0], edges[-1])
     ax.set_xlabel((gen_var or variable_insts[0]).get_full_x_title())
     ax.set_ylabel("Event weight")
-    ax.legend(loc="upper center", fontsize=14, ncols=2)
+    style_config = style_config or {}
+    ax.legend(**legend_kwargs(style_config, loc="upper center", fontsize=14, ncols=2))
     _cms_label(ax, config_inst, cms_label, fontsize=16)
 
-    style_config = style_config or {}
     if "ax_cfg" in style_config:
         ax.set(**style_config["ax_cfg"])
 

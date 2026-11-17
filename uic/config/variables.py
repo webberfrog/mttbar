@@ -495,19 +495,29 @@ def add_variables(config: od.Config) -> None:
             )
 
     # b-jet from the hadronic top decay (AK4 b-jet in resolved events, AK8 subjet in merged)
-    for var, var_label, var_unit, var_binning in [
-        ("mass", "M", "GeV", (50, 0, 100)),
-        ("pt", "p_{T}", "GeV", (50, 0, 500)),
-        ("eta", r"\eta", None, (50, -2.5, 2.5)),
-        ("phi", r"\phi", None, (50, -np.pi, np.pi)),
-    ]:
-        config.add_variable(
-            name=f"bjet_had_{var}",
-            expression=f"TTbar.bjet_had_{var}",
-            binning=var_binning,
-            unit=var_unit,
-            x_title=rf"${var_label}(b_{{had}})$",
-        )
+    # and from the leptonic top decay (always an AK4 b-jet)
+    for decay in ("had", "lep"):
+        for var, var_label, var_unit, var_binning in [
+            ("mass", "M", "GeV", (50, 0, 100)),
+            ("pt", "p_{T}", "GeV", (50, 0, 500)),
+            ("eta", r"\eta", None, (50, -2.5, 2.5)),
+            ("phi", r"\phi", None, (50, -np.pi, np.pi)),
+        ]:
+            config.add_variable(
+                name=f"bjet_{decay}_{var}",
+                expression=f"TTbar.bjet_{decay}_{var}",
+                binning=var_binning,
+                unit=var_unit,
+                x_title=rf"${var_label}(b_{{{decay}}})$",
+            )
+
+    config.add_variable(
+        name="n_bjet_lep",
+        expression="TTbar.n_bjet_lep",
+        binning=(4, -0.5, 3.5),
+        x_title=r"$N_{b-jets}$ (leptonic top)",
+        y_title="Events",
+    )
 
     config.add_variable(
         name="n_bjet_had",

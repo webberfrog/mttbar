@@ -707,6 +707,21 @@ def uic(
         for var in ("pt", "eta", "phi", "mass")
     }))
 
+    # -- identify the b-jet assigned to the leptonic top decay
+    # the leptonic top is built from AK4 jets in both regimes: among them, take
+    # the one with the highest b-tag score that also passes the b-tag working
+    # point (result is missing if none of them do)
+    lep_jets = jet[jet_idxs_lep]
+    lep_jet_is_b = jet_is_b[jet_idxs_lep]
+    lep_jet_btag_score = jet_btag_score[jet_idxs_lep]
+
+    lep_bjets = lep_jets[lep_jet_is_b]
+    lep_bjet_scores = lep_jet_btag_score[lep_jet_is_b]
+    n_bjet_lep = ak.fill_none(ak.num(lep_bjets, axis=1), 0)
+
+    lep_bjet_score_argmax = ak.argmax(lep_bjet_scores, axis=1, keepdims=True)
+    leptonic_b = lv_mass(ak.firsts(lep_bjets[lep_bjet_score_argmax]))
+
     # store final chi2 scores
     top_had_chi2 = comb_results["top_had_chi2"]
     top_lep_chi2 = comb_results["top_lep_chi2"]
@@ -769,11 +784,11 @@ def uic(
     # rest frame), then take their direction of flight there
     lepton_ttrest = lv_mass(lepton).boost(-ttbar.boostvec)
     lepton_topframe = lepton_ttrest.boost(-top_lep_ttrest.boostvec)
-    lepton_dir = lepton_topframe.pvec.unit
+    lepton_dir = lepton_topframe.pvec / lepton_topframe.pvec.p
 
     hadronic_b_ttrest = hadronic_b.boost(-ttbar.boostvec)
     hadronic_b_topframe = hadronic_b_ttrest.boost(-top_had_ttrest.boostvec)
-    hadronic_b_dir = hadronic_b_topframe.pvec.unit
+    hadronic_b_dir = hadronic_b_topframe.pvec / hadronic_b_topframe.pvec.p
 
     # project both directions onto the shared (k, n, r) basis
     lepton_k = lepton_dir.dot(nrk["k"])
@@ -801,8 +816,10 @@ def uic(
         events = set_ak_column(events, f"TTbar.top_{var}", ak.fill_none(getattr(top, var), EMPTY_FLOAT))
         events = set_ak_column(events, f"TTbar.antitop_{var}", ak.fill_none(getattr(antitop, var), EMPTY_FLOAT))
         events = set_ak_column(events, f"TTbar.bjet_had_{var}", ak.fill_none(hadronic_b[var], EMPTY_FLOAT))
+        events = set_ak_column(events, f"TTbar.bjet_lep_{var}", ak.fill_none(leptonic_b[var], EMPTY_FLOAT))
     #Alex angular vars
     events = set_ak_column(events, "TTbar.n_bjet_had", n_bjet_had)
+    events = set_ak_column(events, "TTbar.n_bjet_lep", n_bjet_lep)
     events = set_ak_column(events, "TTbar.cos_phi", ak.fill_none(cos_phi, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_phi_tilde", ak.fill_none(cos_phi_tilde, EMPTY_FLOAT))
     events = set_ak_column(events, "TTbar.cos_theta", ak.fill_none(nrk["cos_theta"], EMPTY_FLOAT))

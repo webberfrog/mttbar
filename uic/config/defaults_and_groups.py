@@ -50,6 +50,22 @@ def set_defaults(
     for key, value in merged_defaults.items():
         setattr(config.x, f"default_{key}", value)
 
+    # style config overrides passed to all columnflow plot functions (deep-merged into style_config);
+    # select a group via --custom-style-config <name>, otherwise the default below is used
+    legend_small = {
+        "legend_cfg": {
+            "fontsize": "small",  # relative to the mplhep CMS base size; can also be a number
+            "title_fontsize": "small",
+            "labelspacing": 0.3,
+            "handlelength": 1.5,
+        },
+    }
+    config.x.custom_style_config_groups = DotDict.wrap({
+        "legend_small": legend_small,
+        "legend_xsmall": {"legend_cfg": {"fontsize": "x-small", "title_fontsize": "x-small"}},
+    })
+    config.x.default_custom_style_config = "legend_small"
+
 
 def set_process_groups(
         config: od.Config,

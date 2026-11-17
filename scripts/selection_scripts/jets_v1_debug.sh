@@ -7,7 +7,7 @@
 
 # common arguments for all tasks
 args=(
-    --version jets_v3
+    --version jets_v2
     --categories incl,1m__0t__2j,1m__1t__2j,1m__0t__3j,1m__1t__3j,1m__0t__chi2pass,1m__1t__chi2pass,1m__0t__chi2fail,1m__1t__chi2fail,1m__0t,1m__1t,1m__chi2pass,1m
     --config run3_mtt_2024_nano_v15_new
     --hist-producer all_weights
@@ -17,7 +17,7 @@ args=(
     --local-scheduler False
     #--shape-norm
     #--skip-ratio
-    --remove-output 8,i
+    --remove-output 6,a,y
     #--selector-steps Jet,BJet
     #--per-plot steps BUGGED
     --cms-label pw

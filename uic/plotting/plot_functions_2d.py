@@ -24,6 +24,8 @@ from columnflow.plotting.plot_util import (
 )
 from columnflow.types import TYPE_CHECKING
 
+from uic.plotting.plot_functions import legend_kwargs
+
 np = maybe_import("numpy")
 if TYPE_CHECKING:
     plt = maybe_import("matplotlib.pyplot")
@@ -237,7 +239,7 @@ def plot_2d_migration(
     # apply style_config
     ax.set(**style_config["ax_cfg"])
     if not skip_legend:
-        ax.legend(**style_config["legend_cfg"])
+        ax.legend(**legend_kwargs(style_config))
 
     # annotation of category label
     annotate_kwargs = {
